@@ -143,17 +143,25 @@
 
             <button id="startBtn">Start</button>
             <button id="restartBtn">Restart</button>
+            <button id="regenerateBtn">🔄 Nové patro</button>
             <button id="editorBtn">Editor</button>
+            <button id="soundToggleBtn">🔊 Zvuky: ZAP</button>
 
             <div style="margin-top: 20px;">
                 <h3>Ovládání:</h3>
                 <p>↑↓←→ - Pohyb</p>
+                <p>🔴 - Hráč</p>
                 <p>🟩 Tráva - normální rychlost</p>
                 <p>❄️ Sníh - pomalý</p>
                 <p>🗿 Kámen - pomalý</p>
                 <p>🏖️ Písek - normální</p>
                 <p>🌊 Voda - neprůchozí</p>
                 <p>🌳 Strom - neprůchozí</p>
+                <p>⬛ Zeď - neprůchozí</p>
+                <p>🗝️ Klíč - sebrat</p>
+                <p>🚪 Východ - dokončit</p>
+                <p>🕳️ Past - -10s, -50 bodů</p>
+                <p>⚡ Spouštěč - bonus</p>
             </div>
         </div>
     </div>
@@ -161,6 +169,12 @@
     <div id="leaderboard">
         <h3>Žebříček</h3>
         <div id="leaderboardList"></div>
+        <div style="margin-top: 10px;">
+            <button id="exportLeaderboardBtn">📤 Exportovat</button>
+            <button id="importLeaderboardBtn">📥 Importovat</button>
+            <button id="clearLeaderboardBtn">🗑️ Vymazat</button>
+        </div>
+        <input type="file" id="leaderboardFileInput" accept=".json" style="display: none;">
     </div>
 
     <div id="gameOver">
@@ -179,8 +193,12 @@
         <button id="clearLevelBtn">Vymazat</button>
         <button id="saveLevelBtn">Uložit patro</button>
         <button id="loadLevelBtn">Načíst patro</button>
+        <button id="testLevelBtn">Testovat patro</button>
         <button id="closeEditorBtn">Zavřít</button>
         <input type="file" id="levelFileInput" accept=".json" style="display: none;">
+        <div id="levelName" style="margin: 10px 0;">
+            <input type="text" id="levelNameInput" placeholder="Název patra" style="width: 100%; padding: 5px; margin-top: 5px;">
+        </div>
     </div>
 
     <script src="game.js"></script>

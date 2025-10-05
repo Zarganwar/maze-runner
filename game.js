@@ -50,11 +50,25 @@ class MazeGame {
             [this.tiles.TRIGGER]: '#e67e22'
         };
 
+        this.tileEmojis = {
+            [this.tiles.WALL]: '⬛',
+            [this.tiles.GRASS]: '',
+            [this.tiles.SNOW]: '❄️',
+            [this.tiles.WATER]: '🌊',
+            [this.tiles.STONE]: '🗿',
+            [this.tiles.SAND]: '🏖️',
+            [this.tiles.TREE]: '🌳',
+            [this.tiles.KEY]: '🗝️',
+            [this.tiles.EXIT]: '🚪',
+            [this.tiles.TRAP]: '🕳️',
+            [this.tiles.TRIGGER]: '⚡'
+        };
+
         this.tileSpeeds = {
-            [this.tiles.GRASS]: 50,
-            [this.tiles.SNOW]: 400,
+            [this.tiles.GRASS]: 25,
+            [this.tiles.SNOW]: 200,
             [this.tiles.STONE]: 1500,
-            [this.tiles.SAND]: 400,
+            [this.tiles.SAND]: 200,
             [this.tiles.KEY]: 200,
             [this.tiles.EXIT]: 200,
             [this.tiles.TRAP]: 1000,
@@ -69,9 +83,48 @@ class MazeGame {
         this.editorMode = false;
         this.selectedTile = this.tiles.WALL;
 
+        this.soundEnabled = localStorage.getItem('mazeGameSoundEnabled') !== 'false';
+        this.initSounds();
+
         this.setupEventListeners();
         this.setupUI();
         this.gameLoop();
+    }
+
+    initSounds() {
+        this.audioContext = null;
+        this.sounds = {};
+
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('Audio not supported');
+        }
+
+        this.updateSoundToggleButton();
+    }
+
+    playSound(frequency, duration = 200, type = 'sine') {
+        if (!this.soundEnabled || !this.audioContext) return;
+
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+
+            gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration / 1000);
+        } catch (e) {
+            console.log('Error playing sound:', e);
+        }
     }
 
     generateEmptyMap() {
@@ -86,16 +139,25 @@ class MazeGame {
     }
 
     createPredefinedLevels() {
-        return [
-            this.generateMaze(60, this.tiles.GRASS, this.tiles.WALL),
-            this.generateMaze(50, this.tiles.SNOW, this.tiles.TREE),
-            this.generateMaze(40, this.tiles.SAND, this.tiles.STONE),
-            this.generateMaze(35, this.tiles.GRASS, this.tiles.WATER),
-            this.generateMaze(30, this.tiles.STONE, this.tiles.WALL)
-        ];
+        const levels = [];
+        for (let i = 1; i <= 10; i++) {
+            levels.push(this.generateProgressiveLevel(i));
+        }
+        return levels;
     }
 
-    generateMaze(complexity = 50, floorTile = this.tiles.GRASS, wallTile = this.tiles.WALL) {
+    generateProgressiveLevel(levelNumber) {
+        const complexity = Math.min(30 + levelNumber * 8, 80);
+        const wallTiles = [this.tiles.WALL, this.tiles.TREE, this.tiles.WATER];
+
+        const floorTile = this.tiles.GRASS;
+        const wallTile = wallTiles[Math.floor(Math.random() * wallTiles.length)];
+
+        const map = this.generateMaze(complexity, floorTile, wallTile, levelNumber);
+        return map;
+    }
+
+    generateMaze(complexity = 50, floorTile = this.tiles.GRASS, wallTile = this.tiles.WALL, levelNumber = 1) {
         const map = [];
 
         for (let y = 0; y < this.gridSize; y++) {
@@ -118,24 +180,64 @@ class MazeGame {
             }
         }
 
-        const keyX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
-        const keyY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
-        map[keyY][keyX] = this.tiles.KEY;
+        const numKeys = Math.max(1, Math.floor(levelNumber / 3));
+        this.keysRequired = numKeys;
+
+        for (let i = 0; i < numKeys; i++) {
+            let keyX, keyY;
+            do {
+                keyX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                keyY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+            } while (map[keyY][keyX] !== floorTile || (keyX === 1 && keyY === 1));
+            map[keyY][keyX] = this.tiles.KEY;
+        }
 
         const exitX = this.gridSize - 2;
         const exitY = this.gridSize - 2;
         map[exitY][exitX] = this.tiles.EXIT;
 
-        const numTraps = Math.floor(Math.random() * 5) + 2;
+        const numTraps = Math.min(levelNumber + 1, 8);
         for (let i = 0; i < numTraps; i++) {
-            const trapX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
-            const trapY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
-            if (map[trapY][trapX] === floorTile) {
-                map[trapY][trapX] = this.tiles.TRAP;
-            }
+            let trapX, trapY;
+            do {
+                trapX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                trapY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+            } while (map[trapY][trapX] !== floorTile || (trapX === 1 && trapY === 1) || (trapX === exitX && trapY === exitY));
+            map[trapY][trapX] = this.tiles.TRAP;
+        }
+
+        const numTriggers = Math.min(Math.floor(levelNumber / 2), 5);
+        for (let i = 0; i < numTriggers; i++) {
+            let triggerX, triggerY;
+            do {
+                triggerX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                triggerY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+            } while (map[triggerY][triggerX] !== floorTile || (triggerX === 1 && triggerY === 1) || (triggerX === exitX && triggerY === exitY));
+            map[triggerY][triggerX] = this.tiles.TRIGGER;
+        }
+
+        if (levelNumber > 5) {
+            this.addMixedTiles(map, floorTile, levelNumber);
         }
 
         return map;
+    }
+
+    addMixedTiles(map, baseTile, levelNumber) {
+        const mixedTiles = [this.tiles.SNOW, this.tiles.SAND];
+        const numMixed = Math.min(levelNumber * 3, 30);
+        const exitX = this.gridSize - 2;
+        const exitY = this.gridSize - 2;
+
+        for (let i = 0; i < numMixed; i++) {
+            const mixedTile = mixedTiles[Math.floor(Math.random() * mixedTiles.length)];
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                y = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+            } while (map[y][x] !== baseTile || (x === 1 && y === 1) || (x === exitX && y === exitY));
+            map[y][x] = mixedTile;
+        }
     }
 
     setupEventListeners() {
@@ -147,14 +249,21 @@ class MazeGame {
 
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('restartBtn').addEventListener('click', () => this.restartGame());
+        document.getElementById('regenerateBtn').addEventListener('click', () => this.regenerateLevel());
         document.getElementById('editorBtn').addEventListener('click', () => this.toggleEditor());
+        document.getElementById('soundToggleBtn').addEventListener('click', () => this.toggleSound());
         document.getElementById('saveScoreBtn').addEventListener('click', () => this.saveScore());
         document.getElementById('playAgainBtn').addEventListener('click', () => this.restartGame());
 
         document.getElementById('clearLevelBtn').addEventListener('click', () => this.clearLevel());
         document.getElementById('saveLevelBtn').addEventListener('click', () => this.saveLevel());
         document.getElementById('loadLevelBtn').addEventListener('click', () => this.loadLevel());
+        document.getElementById('testLevelBtn').addEventListener('click', () => this.testLevel());
         document.getElementById('closeEditorBtn').addEventListener('click', () => this.toggleEditor());
+
+        document.getElementById('exportLeaderboardBtn').addEventListener('click', () => this.exportLeaderboard());
+        document.getElementById('importLeaderboardBtn').addEventListener('click', () => this.importLeaderboard());
+        document.getElementById('clearLeaderboardBtn').addEventListener('click', () => this.clearLeaderboard());
 
         this.canvas.addEventListener('click', (e) => {
             if (this.editorMode) {
@@ -182,6 +291,11 @@ class MazeGame {
             const btn = document.createElement('div');
             btn.className = 'tile-btn';
             btn.style.backgroundColor = this.tileColors[tile.type];
+            btn.style.fontSize = '20px';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.textContent = this.tileEmojis[tile.type] || '';
             btn.title = tile.name;
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('selected'));
@@ -245,9 +359,11 @@ class MazeGame {
                 this.keys++;
                 this.currentMap[y][x] = this.tiles.GRASS;
                 this.score += 100;
+                this.playSound(880, 300, 'sine');
                 break;
             case this.tiles.EXIT:
                 if (this.keys >= this.keysRequired) {
+                    this.playSound(660, 500, 'triangle');
                     this.nextLevel();
                 }
                 break;
@@ -255,8 +371,10 @@ class MazeGame {
                 this.timeRemaining -= 10;
                 this.score -= 50;
                 this.currentMap[y][x] = this.tiles.GRASS;
+                this.playSound(200, 400, 'sawtooth');
                 break;
             case this.tiles.TRIGGER:
+                this.playSound(1200, 200, 'square');
                 this.triggerEffect();
                 break;
         }
@@ -280,12 +398,17 @@ class MazeGame {
 
         if (this.currentLevel <= this.predefinedLevels.length) {
             this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[this.currentLevel - 1]));
-            this.timeLimit = Math.max(60, 120 - (this.currentLevel - 1) * 15);
-            this.timeRemaining = this.timeLimit;
-            this.player.x = 1;
-            this.player.y = 1;
-            this.player.moveDelay = 200;
         } else {
+            this.currentMap = this.generateProgressiveLevel(this.currentLevel);
+        }
+
+        this.timeLimit = Math.max(45, 120 - (this.currentLevel - 1) * 8);
+        this.timeRemaining = this.timeLimit;
+        this.player.x = 1;
+        this.player.y = 1;
+        this.player.moveDelay = 200;
+
+        if (this.currentLevel > 20) {
             this.gameWin();
         }
     }
@@ -309,8 +432,26 @@ class MazeGame {
         this.startGame();
     }
 
+    regenerateLevel() {
+        if (this.gameState !== 'playing') return;
+
+        if (this.currentLevel <= this.predefinedLevels.length) {
+            this.predefinedLevels[this.currentLevel - 1] = this.generateProgressiveLevel(this.currentLevel);
+            this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[this.currentLevel - 1]));
+        } else {
+            this.currentMap = this.generateProgressiveLevel(this.currentLevel);
+        }
+
+        this.keys = 0;
+        this.player.x = 1;
+        this.player.y = 1;
+        this.player.moveDelay = 200;
+        this.playSound(440, 100);
+    }
+
     gameOver() {
         this.gameState = 'gameOver';
+        this.playSound(150, 800, 'sawtooth');
         document.getElementById('gameOver').style.display = 'block';
         document.getElementById('gameOverTitle').textContent = 'Čas vypršel!';
         document.getElementById('gameOverMessage').textContent = 'Nestihli jste dokončit patro včas.';
@@ -319,10 +460,20 @@ class MazeGame {
 
     gameWin() {
         this.gameState = 'gameOver';
+        this.playWinSound();
         document.getElementById('gameOver').style.display = 'block';
         document.getElementById('gameOverTitle').textContent = 'Vítězství!';
         document.getElementById('gameOverMessage').textContent = 'Gratulujeme! Prošli jste všechna patra!';
         document.getElementById('finalScore').textContent = this.score;
+    }
+
+    playWinSound() {
+        if (!this.soundEnabled || !this.audioContext) return;
+
+        setTimeout(() => this.playSound(523, 200), 0);
+        setTimeout(() => this.playSound(659, 200), 200);
+        setTimeout(() => this.playSound(784, 200), 400);
+        setTimeout(() => this.playSound(1047, 400), 600);
     }
 
     saveScore() {
@@ -392,9 +543,14 @@ class MazeGame {
     }
 
     saveLevel() {
+        const levelName = document.getElementById('levelNameInput').value.trim() || 'level';
+        const timeLimit = parseInt(prompt('Časový limit (sekundy):', '120')) || 120;
+
         const levelData = {
+            name: levelName,
             map: this.currentMap,
-            timeLimit: parseInt(prompt('Časový limit (sekundy):', '120')) || 120
+            timeLimit: timeLimit,
+            created: new Date().toISOString()
         };
 
         const dataStr = JSON.stringify(levelData, null, 2);
@@ -402,8 +558,10 @@ class MazeGame {
 
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
-        link.download = 'level.json';
+        link.download = `${levelName}.json`;
         link.click();
+
+        alert(`Patro "${levelName}" bylo uloženo!`);
     }
 
     loadLevel() {
@@ -416,16 +574,152 @@ class MazeGame {
                 reader.onload = (e) => {
                     try {
                         const levelData = JSON.parse(e.target.result);
-                        this.currentMap = levelData.map;
+                        this.currentMap = levelData.map || levelData;
                         this.timeLimit = levelData.timeLimit || 120;
-                        alert('Patro načteno úspěšně!');
+
+                        if (levelData.name) {
+                            document.getElementById('levelNameInput').value = levelData.name;
+                        }
+
+                        alert(`Patro ${levelData.name ? `"${levelData.name}"` : ''} načteno úspěšně!`);
                     } catch (error) {
-                        alert('Chyba při načítání souboru!');
+                        alert('Chyba při načítání souboru! Ujistěte se, že je soubor ve správném formátu.');
                     }
                 };
                 reader.readAsText(file);
             }
         };
+    }
+
+    testLevel() {
+        if (!this.validateLevel()) {
+            alert('Patro není validní! Ujistěte se, že obsahuje počáteční pozici (1,1), alespoň jeden klíč a jeden východ.');
+            return;
+        }
+
+        this.editorMode = false;
+        document.getElementById('levelEditor').style.display = 'none';
+        this.gameState = 'playing';
+        this.currentLevel = 1;
+        this.score = 0;
+        this.keys = 0;
+        this.timeRemaining = this.timeLimit;
+        this.gameStartTime = Date.now();
+        this.player.x = 1;
+        this.player.y = 1;
+        this.player.moveDelay = 200;
+        document.getElementById('gameOver').style.display = 'none';
+    }
+
+    validateLevel() {
+        let hasKey = false;
+        let hasExit = false;
+
+        for (let y = 0; y < this.gridSize; y++) {
+            for (let x = 0; x < this.gridSize; x++) {
+                const tile = this.currentMap[y][x];
+                if (tile === this.tiles.KEY) hasKey = true;
+                if (tile === this.tiles.EXIT) hasExit = true;
+            }
+        }
+
+        const startTile = this.currentMap[1][1];
+        const canStartOn = !this.impassableTiles.includes(startTile);
+
+        return hasKey && hasExit && canStartOn;
+    }
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        localStorage.setItem('mazeGameSoundEnabled', this.soundEnabled.toString());
+        this.updateSoundToggleButton();
+
+        if (this.soundEnabled && this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+
+        this.playSound(440, 100);
+    }
+
+    updateSoundToggleButton() {
+        const button = document.getElementById('soundToggleBtn');
+        if (button) {
+            button.textContent = this.soundEnabled ? '🔊 Zvuky: ZAP' : '🔇 Zvuky: VYP';
+        }
+    }
+
+    exportLeaderboard() {
+        const leaderboard = JSON.parse(localStorage.getItem('mazeGameLeaderboard')) || [];
+
+        if (leaderboard.length === 0) {
+            alert('Žebříček je prázdný!');
+            return;
+        }
+
+        const exportData = {
+            leaderboard: leaderboard,
+            exported: new Date().toISOString(),
+            gameVersion: '1.0'
+        };
+
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `maze-leaderboard-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+
+        alert('Žebříček byl exportován!');
+    }
+
+    importLeaderboard() {
+        document.getElementById('leaderboardFileInput').click();
+
+        document.getElementById('leaderboardFileInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importData = JSON.parse(e.target.result);
+                        let importedLeaderboard;
+
+                        if (importData.leaderboard && Array.isArray(importData.leaderboard)) {
+                            importedLeaderboard = importData.leaderboard;
+                        } else if (Array.isArray(importData)) {
+                            importedLeaderboard = importData;
+                        } else {
+                            throw new Error('Invalid format');
+                        }
+
+                        const currentLeaderboard = JSON.parse(localStorage.getItem('mazeGameLeaderboard')) || [];
+                        const mergedLeaderboard = [...currentLeaderboard, ...importedLeaderboard];
+
+                        mergedLeaderboard.sort((a, b) => b.score - a.score);
+                        const uniqueLeaderboard = mergedLeaderboard.filter((entry, index, self) =>
+                            index === self.findIndex(e => e.name === entry.name && e.score === entry.score && e.date === entry.date)
+                        ).slice(0, 20);
+
+                        localStorage.setItem('mazeGameLeaderboard', JSON.stringify(uniqueLeaderboard));
+                        this.updateLeaderboard();
+
+                        alert(`Importováno ${importedLeaderboard.length} záznamů! Duplicity byly odstraněny.`);
+                    } catch (error) {
+                        alert('Chyba při importu! Ujistěte se, že soubor je ve správném formátu.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+    }
+
+    clearLeaderboard() {
+        if (confirm('Opravdu chcete vymazat celý žebříček? Tato akce je nevratná!')) {
+            localStorage.removeItem('mazeGameLeaderboard');
+            this.updateLeaderboard();
+            alert('Žebříček byl vymazán!');
+        }
     }
 
     update() {
@@ -458,16 +752,29 @@ class MazeGame {
                 this.ctx.strokeStyle = '#2c3e50';
                 this.ctx.lineWidth = 1;
                 this.ctx.strokeRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+
+                const emoji = this.tileEmojis[tile];
+                if (emoji) {
+                    this.ctx.font = `${this.tileSize * 0.7}px serif`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(
+                        emoji,
+                        x * this.tileSize + this.tileSize / 2,
+                        y * this.tileSize + this.tileSize / 2
+                    );
+                }
             }
         }
 
         if (this.gameState === 'playing' || this.gameState === 'editor') {
-            this.ctx.fillStyle = '#e74c3c';
-            this.ctx.fillRect(
-                this.player.x * this.tileSize + 2,
-                this.player.y * this.tileSize + 2,
-                this.tileSize - 4,
-                this.tileSize - 4
+            this.ctx.font = `${this.tileSize * 0.8}px serif`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(
+                '🔴',
+                this.player.x * this.tileSize + this.tileSize / 2,
+                this.player.y * this.tileSize + this.tileSize / 2
             );
         }
     }
