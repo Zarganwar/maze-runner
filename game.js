@@ -3,7 +3,6 @@ class MazeGame {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.gridSize = 32;
-        // Konfigurovatelná velikost dlaždic - upravte tuto hodnotu pro změnu velikosti
         this.tileSize = 28;
 
         this.gameState = 'menu';
@@ -21,6 +20,7 @@ class MazeGame {
             moveSpeed: 1,
             lastMoveTime: 0,
             moveDelay: 1,
+            lastDirection: null,
             powerupSlowdownEnd: 0,
             trapSlowdownEnd: 0,
             trapImmunity: 0,
@@ -45,20 +45,20 @@ class MazeGame {
             TRIGGER: 10,
             POWERUP: 11
         };
-
+        const tilesBackground = '#57b037'; // 'transparent'
         this.tileColors = {
-            [this.tiles.WALL]: '#34495e',
-            [this.tiles.GRASS]: '#57b037',
-            [this.tiles.SNOW]: '#ecf0f1',
-            [this.tiles.WATER]: '#3498db',
-            [this.tiles.STONE]: '#7f8c8d',
-            [this.tiles.SAND]: '#f39c12',
-            [this.tiles.TREE]: '#228b22',
-            [this.tiles.KEY]: '#f1c40f',
-            [this.tiles.EXIT]: '#5a3105',
-            [this.tiles.TRAP]: '#8e44ad',
-            [this.tiles.TRIGGER]: '#e67e22',
-            [this.tiles.POWERUP]: '#ffd700'
+            [this.tiles.WALL]: tilesBackground, // #34495e
+            [this.tiles.GRASS]: tilesBackground, // #57b037
+            [this.tiles.SNOW]: '#ecf0f1', // #ecf0f1
+            [this.tiles.WATER]: '#3498db', // #3498db
+            [this.tiles.STONE]: tilesBackground, // #7f8c8d
+            [this.tiles.SAND]: '#f39c12', // #f39c12
+            [this.tiles.TREE]: tilesBackground, // #228b22
+            [this.tiles.KEY]: tilesBackground, // #f1c40f
+            [this.tiles.EXIT]: tilesBackground, // #5a3105
+            [this.tiles.TRAP]: tilesBackground, // #8e44ad
+            [this.tiles.TRIGGER]: tilesBackground, // #e67e22
+            [this.tiles.POWERUP]: tilesBackground // #ffd700
         };
 
         this.tileIcons = {
@@ -105,8 +105,8 @@ class MazeGame {
         this.selectedTile = this.tiles.WALL;
 
         this.soundEnabled = localStorage.getItem('mazeGameSoundEnabled') !== 'false';
-        this.initSounds();
 
+        this.initSounds();
         this.setupEventListeners();
         this.setupUI();
         this.loadImages();
@@ -170,9 +170,9 @@ class MazeGame {
         ctx.fillRect(0, 0, this.tileSize, this.tileSize);
 
         // Draw border
-        ctx.strokeStyle = '#2c3e50';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
+        // ctx.strokeStyle = '#2c3e50';
+        // ctx.lineWidth = 1;
+        // ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
 
         // Draw icon if available
         if (img && img.complete) {
@@ -193,9 +193,9 @@ class MazeGame {
         ctx.fillRect(0, 0, this.tileSize, this.tileSize);
 
         // Draw border
-        ctx.strokeStyle = '#2c3e50';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
+        // ctx.strokeStyle = '#2c3e50';
+        // ctx.lineWidth = 1;
+        // ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
 
         this.tileCanvases[tileType] = canvas;
     }
@@ -245,11 +245,10 @@ class MazeGame {
     generateProgressiveLevel(levelNumber) {
         const complexity = Math.min(30 + levelNumber * 8, 80);
         const wallTiles = [this.tiles.WALL, this.tiles.TREE];
-
         const floorTile = this.tiles.GRASS;
         const wallTile = wallTiles[Math.floor(Math.random() * wallTiles.length)];
-
         const map = this.generateMaze(complexity, floorTile, wallTile, levelNumber);
+
         return map;
     }
 
@@ -357,8 +356,9 @@ class MazeGame {
             }
 
             if (this.gameState === 'playing' && !this.editorMode) {
-                // Quick save level with 'S' key
-                if (e.key === 's' || e.key === 'S') {
+                // Quick save level with Ctrl+S
+                if ((e.key === 's' || e.key === 'S') && e.ctrlKey) {
+                    e.preventDefault();
                     this.quickSaveCurrentLevel();
                     return;
                 }
@@ -417,7 +417,7 @@ class MazeGame {
         tileTypes.forEach(tile => {
             const btn = document.createElement('div');
             btn.className = 'tile-btn';
-            btn.style.backgroundColor = this.tileColors[tile.type];
+            // btn.style.backgroundColor = this.tileColors[tile.type];
             btn.style.display = 'flex';
             btn.style.alignItems = 'center';
             btn.style.justifyContent = 'center';
@@ -444,27 +444,50 @@ class MazeGame {
 
     handlePlayerMovement(key) {
         const now = Date.now();
-        if (now - this.player.lastMoveTime < this.player.moveDelay) return;
 
+        let direction = null;
         let newX = this.player.x;
         let newY = this.player.y;
 
         switch (key) {
             case 'ArrowUp':
+            case 'w':
+            case 'W':
+                direction = 'up';
                 newY--;
                 break;
             case 'ArrowDown':
+            case 's':
+            case 'S':
+                direction = 'down';
                 newY++;
                 break;
             case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                direction = 'left';
                 newX--;
                 break;
             case 'ArrowRight':
+            case 'd':
+            case 'D':
+                direction = 'right';
                 newX++;
                 break;
             default:
                 return;
         }
+
+        // If direction changed, reduce delay for more responsive controls
+        const directionChanged = this.player.lastDirection !== direction;
+        let effectiveDelay = this.player.moveDelay;
+
+        if (directionChanged) {
+            // Reduce delay when changing direction for more responsive feel
+            effectiveDelay = Math.max(this.player.moveDelay * 0.3, 50);
+        }
+
+        if (now - this.player.lastMoveTime < effectiveDelay) return;
 
         if (this.isValidMove(newX, newY)) {
             // Add current position to trail before moving
@@ -473,6 +496,7 @@ class MazeGame {
             this.player.x = newX;
             this.player.y = newY;
             this.player.lastMoveTime = now;
+            this.player.lastDirection = direction;
 
             const currentTile = this.currentMap[newY][newX];
             let baseMoveDelay = this.tileSpeeds[currentTile] || 25;
@@ -643,9 +667,10 @@ class MazeGame {
             },
             // Dočasná neviditelnost
             () => {
-                this.player.invisibility = Date.now() + 8000; // 8 sekund neviditelnosti
+                const duration = 8000;
+                this.player.invisibility = Date.now() + duration;
                 this.showMagicMessage("👻 Neviditelnost aktivní!", "#9b59b6");
-                this.addMagicEffect("👻 Neviditelnost", 8000);
+                this.addMagicEffect("👻 Neviditelnost", duration);
             }
         ];
 
@@ -720,6 +745,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.lastDirection = null;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
@@ -741,6 +767,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.lastDirection = null;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
@@ -769,6 +796,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.lastDirection = null;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
@@ -942,6 +970,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.lastDirection = null;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
@@ -1235,9 +1264,11 @@ class MazeGame {
     }
 
     render() {
+        // Clear canvas efficiently
         this.ctx.fillStyle = '#2c3e50';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Performance optimization: Batch similar operations and minimize state changes
         // Draw each tile using cached canvases for better performance
         for (let y = 0; y < this.gridSize; y++) {
             for (let x = 0; x < this.gridSize; x++) {
@@ -1246,6 +1277,7 @@ class MazeGame {
                 // Use cached canvas if available, otherwise fall back to basic rendering
                 const cachedCanvas = this.tileCanvases[tile];
                 if (cachedCanvas) {
+                    // Optimized: Use cached pre-rendered tiles
                     this.ctx.drawImage(
                         cachedCanvas,
                         x * this.tileSize,
@@ -1304,7 +1336,7 @@ class MazeGame {
 
             // Check if player is invisible (but keep them visible enough to see)
             if (this.player.invisibility > 0 && now < this.player.invisibility) {
-                playerOpacity = 0.6; // More visible when invisible
+                playerOpacity = 0.95;
             }
 
             this.ctx.save();
