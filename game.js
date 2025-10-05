@@ -91,12 +91,12 @@ class MazeGame {
 
         this.tileSpeeds = {
             [this.tiles.GRASS]: 25,
-            [this.tiles.SNOW]: 200,
+            [this.tiles.SNOW]: 700,
             [this.tiles.STONE]: 1500,
-            [this.tiles.SAND]: 200,
+            [this.tiles.SAND]: 400,
             [this.tiles.KEY]: 200,
             [this.tiles.EXIT]: 500,
-            [this.tiles.TRAP]: 1000,
+            [this.tiles.TRAP]: 1500,
             [this.tiles.TRIGGER]: 25,
             [this.tiles.POWERUP]: 25
         };
@@ -694,16 +694,18 @@ class MazeGame {
             case this.tiles.TRAP:
                 const now = Date.now();
                 if (this.player.trapImmunity > 0 && now < this.player.trapImmunity) {
-                    // Hráč má imunitu - past neúčinkuje
+                    const bonus = 150;
+                    this.score += bonus;
                     this.showMagicMessage("🛡️ Imunita!", "#27ae60");
+                    this.showMagicMessage("💰 Bonus +" + bonus, "#27ae60");
                     this.playSound(800, 200, 'triangle');
                 } else {
-                    // Normální efekt pasti
                     this.timeRemaining -= 10;
-                    this.score -= 50;
-                    this.player.trapSlowdownEnd = Date.now() + 5000; // 5 seconds slowdown
+                    this.score -= 1500;
+                    const duration = 5000;
+                    this.player.trapSlowdownEnd = Date.now() + duration;
                     this.showMagicMessage("🐌 Zpomalení aktivní!", "#e74c3c");
-                    this.addMagicEffect("🐌 Zpomalení", 5000);
+                    this.addMagicEffect("🐌 Zpomalení", duration);
                     this.playSound(200, 400, 'sawtooth');
                 }
                 this.currentMap[y][x] = this.tiles.GRASS;
