@@ -24,6 +24,9 @@ class MazeGame {
             trapImmunity: 0
         };
 
+        this.currentMagicEffect = "Žádný";
+        this.magicEffectExpiry = 0;
+
         this.tiles = {
             WALL: 0,
             GRASS: 1,
@@ -283,6 +286,7 @@ class MazeGame {
         document.getElementById('soundToggleBtn').addEventListener('click', () => this.toggleSound());
         document.getElementById('saveScoreBtn').addEventListener('click', () => this.saveScore());
         document.getElementById('playAgainBtn').addEventListener('click', () => this.restartGame());
+        document.getElementById('closeGameOverBtn').addEventListener('click', () => this.closeGameOver());
 
         document.getElementById('clearLevelBtn').addEventListener('click', () => this.clearLevel());
         document.getElementById('saveLevelBtn').addEventListener('click', () => this.saveLevel());
@@ -431,6 +435,7 @@ class MazeGame {
             case this.tiles.TRIGGER:
                 this.playSound(1200, 200, 'square');
                 this.triggerEffect();
+                this.currentMap[y][x] = this.tiles.GRASS;
                 break;
             case this.tiles.POWERUP:
                 this.score += 150;
@@ -447,16 +452,19 @@ class MazeGame {
             () => {
                 this.timeRemaining += 20;
                 this.showMagicMessage("🕐 +20 sekund!", "#3498db");
+                this.setMagicEffect("Čas +20s", 0);
             },
             // Skóre efekty
             () => {
                 this.score += 200;
                 this.showMagicMessage("💰 +200 bodů!", "#f1c40f");
+                this.setMagicEffect("Skóre +200", 0);
             },
             // Rychlost efekty
             () => {
                 this.player.moveDelay = Math.max(50, this.player.moveDelay - 75);
                 this.showMagicMessage("🏃 Rychlost zvýšena!", "#2ecc71");
+                this.setMagicEffect("Rychlost zvýšena", 0);
             },
             // Teleportace k náhodnému klíči
             () => {
@@ -473,26 +481,39 @@ class MazeGame {
                     this.player.x = Math.max(0, randomKey.x - 1);
                     this.player.y = Math.max(0, randomKey.y - 1);
                     this.showMagicMessage("🌀 Teleportace ke klíči!", "#9b59b6");
+                    this.setMagicEffect("Teleportován", 0);
                 } else {
                     this.score += 100;
                     this.showMagicMessage("✨ Žádný klíč k teleportaci! +100 bodů", "#e67e22");
+                    this.setMagicEffect("Bonus +100", 0);
                 }
             },
             // Dočasná imunita vůči pastím
             () => {
                 this.player.trapImmunity = Date.now() + 10000; // 10 sekund
                 this.showMagicMessage("🛡️ Imunita vůči pastím!", "#e74c3c");
+                this.setMagicEffect("🛡️ Imunita past", 10000);
             },
             // Bonus za všechny sebrané klíče
             () => {
                 const bonusPoints = this.keys * 150;
                 this.score += bonusPoints;
                 this.showMagicMessage(`🗝️ Bonus za klíče: +${bonusPoints}!`, "#f39c12");
+                this.setMagicEffect("Bonus klíče", 0);
             }
         ];
 
         const effect = effects[Math.floor(Math.random() * effects.length)];
         effect();
+    }
+
+    setMagicEffect(effectName, duration) {
+        this.currentMagicEffect = effectName;
+        if (duration > 0) {
+            this.magicEffectExpiry = Date.now() + duration;
+        } else {
+            this.magicEffectExpiry = 0;
+        }
     }
 
     showMagicMessage(text, color) {
@@ -556,6 +577,8 @@ class MazeGame {
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.currentMagicEffect = "Žádný";
+        this.magicEffectExpiry = 0;
 
         // Removed level 20 limit - game continues indefinitely for infinite scoring
     }
@@ -573,6 +596,8 @@ class MazeGame {
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.currentMagicEffect = "Žádný";
+        this.magicEffectExpiry = 0;
         this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[0]));
         document.getElementById('gameOver').style.display = 'none';
     }
@@ -597,6 +622,8 @@ class MazeGame {
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.currentMagicEffect = "Žádný";
+        this.magicEffectExpiry = 0;
         this.playSound(440, 100);
     }
 
@@ -607,6 +634,11 @@ class MazeGame {
         document.getElementById('gameOverTitle').textContent = 'Čas vypršel!';
         document.getElementById('gameOverMessage').textContent = 'Nestihli jste dokončit patro včas.';
         document.getElementById('finalScore').textContent = this.score;
+    }
+
+    closeGameOver() {
+        document.getElementById('gameOver').style.display = 'none';
+        this.gameState = 'menu';
     }
 
     gameWin() {
@@ -761,6 +793,8 @@ class MazeGame {
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.currentMagicEffect = "Žádný";
+        this.magicEffectExpiry = 0;
         document.getElementById('gameOver').style.display = 'none';
     }
 
@@ -914,6 +948,12 @@ class MazeGame {
             if (this.timeRemaining <= 0) {
                 this.gameOver();
             }
+
+            // Check if magic effect has expired
+            if (this.magicEffectExpiry > 0 && now >= this.magicEffectExpiry) {
+                this.currentMagicEffect = "Žádný";
+                this.magicEffectExpiry = 0;
+            }
         }
 
         // Count actual keys on the map
@@ -932,6 +972,14 @@ class MazeGame {
         document.getElementById('score').textContent = this.score;
         document.getElementById('keys').textContent = `${this.keys}/${totalKeys}`;
         document.getElementById('playerSpeed').textContent = this.player.moveDelay;
+
+        // Update magic effect display
+        let magicEffectText = this.currentMagicEffect;
+        if (this.magicEffectExpiry > 0) {
+            const remainingTime = Math.ceil((this.magicEffectExpiry - Date.now()) / 1000);
+            magicEffectText += ` (${remainingTime}s)`;
+        }
+        document.getElementById('magicEffect').textContent = magicEffectText;
     }
 
     render() {
