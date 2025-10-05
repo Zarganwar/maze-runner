@@ -12,7 +12,7 @@ class MazeGame {
         this.timeRemaining = this.timeLimit;
         this.gameStartTime = 0;
         this.keys = 0;
-        this.keysRequired = 1;
+        // this.keysRequired = 1;
 
         this.player = {
             x: 1,
@@ -65,7 +65,7 @@ class MazeGame {
             [this.tiles.SAND]: '🏖️',
             [this.tiles.TREE]: '🌳',
             [this.tiles.KEY]: '🗝️',
-            [this.tiles.EXIT]: '🚪',
+            [this.tiles.EXIT]: '🏁',
             [this.tiles.TRAP]: '🕳️',
             [this.tiles.TRIGGER]: '🔮',
             [this.tiles.POWERUP]: '⚡'
@@ -77,7 +77,7 @@ class MazeGame {
             [this.tiles.STONE]: 1500,
             [this.tiles.SAND]: 200,
             [this.tiles.KEY]: 200,
-            [this.tiles.EXIT]: 200,
+            [this.tiles.EXIT]: 500,
             [this.tiles.TRAP]: 1000,
             [this.tiles.TRIGGER]: 200,
             [this.tiles.POWERUP]: 150
@@ -189,7 +189,7 @@ class MazeGame {
         }
 
         const numKeys = Math.max(1, Math.floor(levelNumber / 3));
-        this.keysRequired = numKeys;
+        // this.keysRequired = numKeys;
 
         for (let i = 0; i < numKeys; i++) {
             let keyX, keyY;
@@ -1018,7 +1018,7 @@ class MazeGame {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(
-                '🔴',
+                '🐥',
                 this.player.x * this.tileSize + this.tileSize / 2,
                 this.player.y * this.tileSize + this.tileSize / 2
             );
