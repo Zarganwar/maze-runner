@@ -20,7 +20,8 @@ class MazeGame {
             moveSpeed: 1,
             lastMoveTime: 0,
             moveDelay: 25,
-            powerupSlowdownEnd: 0
+            powerupSlowdownEnd: 0,
+            trapImmunity: 0
         };
 
         this.tiles = {
@@ -41,16 +42,16 @@ class MazeGame {
         this.tileColors = {
             [this.tiles.WALL]: '#34495e',
             [this.tiles.GRASS]: '#57b037',
-            [this.tiles.SNOW]: '#ecf0f155',
-            [this.tiles.WATER]: '#3498db55',
-            [this.tiles.STONE]: '#7f8c8d55',
-            [this.tiles.SAND]: '#f39c1255',
-            [this.tiles.TREE]: '#228b2255',
-            [this.tiles.KEY]: '#f1c40f55',
-            [this.tiles.EXIT]: '#e74c3c55',
-            [this.tiles.TRAP]: '#8e44ad55',
-            [this.tiles.TRIGGER]: '#e67e2255',
-            [this.tiles.POWERUP]: '#ffd70055'
+            [this.tiles.SNOW]: '#ecf0f1',
+            [this.tiles.WATER]: '#3498db',
+            [this.tiles.STONE]: '#7f8c8d',
+            [this.tiles.SAND]: '#f39c12',
+            [this.tiles.TREE]: '#228b22',
+            [this.tiles.KEY]: '#f1c40f',
+            [this.tiles.EXIT]: '#F4C8C5FF',
+            [this.tiles.TRAP]: '#8e44ad',
+            [this.tiles.TRIGGER]: '#e67e22',
+            [this.tiles.POWERUP]: '#ffd700'
         };
 
         this.tileEmojis = {
@@ -64,7 +65,7 @@ class MazeGame {
             [this.tiles.KEY]: '🗝️',
             [this.tiles.EXIT]: '🚪',
             [this.tiles.TRAP]: '🕳️',
-            [this.tiles.TRIGGER]: '⚡',
+            [this.tiles.TRIGGER]: '🔮',
             [this.tiles.POWERUP]: '⚡'
         };
 
@@ -414,10 +415,18 @@ class MazeGame {
                 }
                 break;
             case this.tiles.TRAP:
-                this.timeRemaining -= 10;
-                this.score -= 50;
+                const now = Date.now();
+                if (this.player.trapImmunity && now < this.player.trapImmunity) {
+                    // Hráč má imunitu - past neúčinkuje
+                    this.showMagicMessage("🛡️ Imunita!", "#27ae60");
+                    this.playSound(800, 200, 'triangle');
+                } else {
+                    // Normální efekt pasti
+                    this.timeRemaining -= 10;
+                    this.score -= 50;
+                    this.playSound(200, 400, 'sawtooth');
+                }
                 this.currentMap[y][x] = this.tiles.GRASS;
-                this.playSound(200, 400, 'sawtooth');
                 break;
             case this.tiles.TRIGGER:
                 this.playSound(1200, 200, 'square');
@@ -434,13 +443,98 @@ class MazeGame {
 
     triggerEffect() {
         const effects = [
-            () => { this.timeRemaining += 15; },
-            () => { this.score += 50; },
-            () => { this.player.moveDelay = Math.max(100, this.player.moveDelay - 50); }
+            // Časové efekty
+            () => {
+                this.timeRemaining += 20;
+                this.showMagicMessage("🕐 +20 sekund!", "#3498db");
+            },
+            // Skóre efekty
+            () => {
+                this.score += 200;
+                this.showMagicMessage("💰 +200 bodů!", "#f1c40f");
+            },
+            // Rychlost efekty
+            () => {
+                this.player.moveDelay = Math.max(50, this.player.moveDelay - 75);
+                this.showMagicMessage("🏃 Rychlost zvýšena!", "#2ecc71");
+            },
+            // Teleportace k náhodnému klíči
+            () => {
+                const keys = [];
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        if (this.currentMap[y][x] === this.tiles.KEY) {
+                            keys.push({x, y});
+                        }
+                    }
+                }
+                if (keys.length > 0) {
+                    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                    this.player.x = Math.max(0, randomKey.x - 1);
+                    this.player.y = Math.max(0, randomKey.y - 1);
+                    this.showMagicMessage("🌀 Teleportace ke klíči!", "#9b59b6");
+                } else {
+                    this.score += 100;
+                    this.showMagicMessage("✨ Žádný klíč k teleportaci! +100 bodů", "#e67e22");
+                }
+            },
+            // Dočasná imunita vůči pastím
+            () => {
+                this.player.trapImmunity = Date.now() + 10000; // 10 sekund
+                this.showMagicMessage("🛡️ Imunita vůči pastím!", "#e74c3c");
+            },
+            // Bonus za všechny sebrané klíče
+            () => {
+                const bonusPoints = this.keys * 150;
+                this.score += bonusPoints;
+                this.showMagicMessage(`🗝️ Bonus za klíče: +${bonusPoints}!`, "#f39c12");
+            }
         ];
 
         const effect = effects[Math.floor(Math.random() * effects.length)];
         effect();
+    }
+
+    showMagicMessage(text, color) {
+        const message = document.createElement('div');
+        message.textContent = text;
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: ${color};
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1000;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: magicPulse 2s ease-out forwards;
+        `;
+
+        // Přidáme CSS animaci pro efekt
+        if (!document.getElementById('magicAnimations')) {
+            const style = document.createElement('style');
+            style.id = 'magicAnimations';
+            style.textContent = `
+                @keyframes magicPulse {
+                    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                    50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(message);
+
+        setTimeout(() => {
+            if (document.body.contains(message)) {
+                document.body.removeChild(message);
+            }
+        }, 2000);
     }
 
     nextLevel() {
@@ -461,6 +555,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapImmunity = 0;
 
         // Removed level 20 limit - game continues indefinitely for infinite scoring
     }
@@ -477,6 +572,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapImmunity = 0;
         this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[0]));
         document.getElementById('gameOver').style.display = 'none';
     }
@@ -500,6 +596,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapImmunity = 0;
         this.playSound(440, 100);
     }
 
@@ -663,6 +760,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapImmunity = 0;
         document.getElementById('gameOver').style.display = 'none';
     }
 
@@ -833,6 +931,7 @@ class MazeGame {
         document.getElementById('timer').textContent = this.timeRemaining;
         document.getElementById('score').textContent = this.score;
         document.getElementById('keys').textContent = `${this.keys}/${totalKeys}`;
+        document.getElementById('playerSpeed').textContent = this.player.moveDelay;
     }
 
     render() {
