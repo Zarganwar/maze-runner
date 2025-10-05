@@ -19,7 +19,8 @@ class MazeGame {
             y: 1,
             moveSpeed: 1,
             lastMoveTime: 0,
-            moveDelay: 25
+            moveDelay: 25,
+            powerupSlowdownEnd: 0
         };
 
         this.tiles = {
@@ -33,21 +34,23 @@ class MazeGame {
             KEY: 7,
             EXIT: 8,
             TRAP: 9,
-            TRIGGER: 10
+            TRIGGER: 10,
+            POWERUP: 11
         };
 
         this.tileColors = {
             [this.tiles.WALL]: '#34495e',
-            [this.tiles.GRASS]: '#27ae60',
-            [this.tiles.SNOW]: '#ecf0f1',
-            [this.tiles.WATER]: '#3498db',
-            [this.tiles.STONE]: '#7f8c8d',
-            [this.tiles.SAND]: '#f39c12',
-            [this.tiles.TREE]: '#228b22',
-            [this.tiles.KEY]: '#f1c40f',
-            [this.tiles.EXIT]: '#e74c3c',
-            [this.tiles.TRAP]: '#8e44ad',
-            [this.tiles.TRIGGER]: '#e67e22'
+            [this.tiles.GRASS]: '#57b037',
+            [this.tiles.SNOW]: '#ecf0f155',
+            [this.tiles.WATER]: '#3498db55',
+            [this.tiles.STONE]: '#7f8c8d55',
+            [this.tiles.SAND]: '#f39c1255',
+            [this.tiles.TREE]: '#228b2255',
+            [this.tiles.KEY]: '#f1c40f55',
+            [this.tiles.EXIT]: '#e74c3c55',
+            [this.tiles.TRAP]: '#8e44ad55',
+            [this.tiles.TRIGGER]: '#e67e2255',
+            [this.tiles.POWERUP]: '#ffd70055'
         };
 
         this.tileEmojis = {
@@ -61,7 +64,8 @@ class MazeGame {
             [this.tiles.KEY]: '🗝️',
             [this.tiles.EXIT]: '🚪',
             [this.tiles.TRAP]: '🕳️',
-            [this.tiles.TRIGGER]: '⚡'
+            [this.tiles.TRIGGER]: '⚡',
+            [this.tiles.POWERUP]: '⚡'
         };
 
         this.tileSpeeds = {
@@ -72,7 +76,8 @@ class MazeGame {
             [this.tiles.KEY]: 200,
             [this.tiles.EXIT]: 200,
             [this.tiles.TRAP]: 1000,
-            [this.tiles.TRIGGER]: 200
+            [this.tiles.TRIGGER]: 200,
+            [this.tiles.POWERUP]: 200
         };
 
         this.impassableTiles = [this.tiles.WALL, this.tiles.WATER, this.tiles.TREE];
@@ -216,6 +221,19 @@ class MazeGame {
             map[triggerY][triggerX] = this.tiles.TRIGGER;
         }
 
+        // Add powerups starting from level 3
+        if (levelNumber >= 3) {
+            const numPowerups = Math.min(Math.floor(levelNumber / 3) + 1, 4);
+            for (let i = 0; i < numPowerups; i++) {
+                let powerupX, powerupY;
+                do {
+                    powerupX = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                    powerupY = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+                } while (map[powerupY][powerupX] !== floorTile || (powerupX === 1 && powerupY === 1) || (powerupX === exitX && powerupY === exitY));
+                map[powerupY][powerupX] = this.tiles.POWERUP;
+            }
+        }
+
         if (levelNumber > 5) {
             this.addMixedTiles(map, floorTile, levelNumber);
         }
@@ -294,7 +312,8 @@ class MazeGame {
             { type: this.tiles.TREE, name: 'Strom' },
             { type: this.tiles.KEY, name: 'Klíč' },
             { type: this.tiles.EXIT, name: 'Východ' },
-            { type: this.tiles.TRAP, name: 'Past' }
+            { type: this.tiles.TRAP, name: 'Past' },
+            { type: this.tiles.POWERUP, name: 'Powerup' }
         ];
 
         tileTypes.forEach(tile => {
@@ -348,7 +367,14 @@ class MazeGame {
             this.player.lastMoveTime = now;
 
             const currentTile = this.currentMap[newY][newX];
-            this.player.moveDelay = this.tileSpeeds[currentTile] || 200;
+            let baseMoveDelay = this.tileSpeeds[currentTile] || 200;
+
+            // Apply powerup slowdown if active
+            if (now < this.player.powerupSlowdownEnd) {
+                baseMoveDelay = Math.max(baseMoveDelay * 2, 100); // Double delay but cap minimum
+            }
+
+            this.player.moveDelay = baseMoveDelay;
 
             this.handleTileInteraction(currentTile, newX, newY);
         }
@@ -397,6 +423,12 @@ class MazeGame {
                 this.playSound(1200, 200, 'square');
                 this.triggerEffect();
                 break;
+            case this.tiles.POWERUP:
+                this.score += 150;
+                this.currentMap[y][x] = this.tiles.GRASS;
+                this.player.powerupSlowdownEnd = Date.now() + 8000; // 8 seconds slowdown
+                this.playSound(1000, 400, 'triangle');
+                break;
         }
     }
 
@@ -428,10 +460,9 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.powerupSlowdownEnd = 0;
 
-        if (this.currentLevel > 20) {
-            this.gameWin();
-        }
+        // Removed level 20 limit - game continues indefinitely for infinite scoring
     }
 
     startGame() {
@@ -445,6 +476,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.powerupSlowdownEnd = 0;
         this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[0]));
         document.getElementById('gameOver').style.display = 'none';
     }
@@ -467,6 +499,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.powerupSlowdownEnd = 0;
         this.playSound(440, 100);
     }
 
@@ -629,6 +662,7 @@ class MazeGame {
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
+        this.player.powerupSlowdownEnd = 0;
         document.getElementById('gameOver').style.display = 'none';
     }
 
