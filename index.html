@@ -196,14 +196,18 @@
             display: inline-block;
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
-            padding: 6px 12px;
+            padding: 4px 8px;
             margin: 2px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 600;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             position: relative;
-            animation: effectPulse 2s infinite;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+            animation: none;
         }
 
         .effect-badge.immunity {
@@ -254,7 +258,7 @@
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
-            gap: 12px;
+            gap: 24px;
             align-items: flex-end;
             padding: 0 16px;
         }
@@ -306,11 +310,20 @@
 
         /* Mobile action buttons (right side) */
         .mobile-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+            display: grid;
+            grid-template-columns: repeat(2, 44px);
+            grid-auto-rows: 44px;
+            gap: 10px 12px;
+            align-content: center;
+            justify-content: center;
             pointer-events: auto;
             padding-bottom: 6px;
+            margin: 0 8px;
+        }
+        /* center the 5th button on a new row */
+        .mobile-actions .action-btn:nth-child(5) {
+            grid-column: 1 / -1;
+            justify-self: center;
         }
         .action-btn {
             width: 44px;
@@ -362,7 +375,8 @@
         @media (max-width: 900px) {
             body { padding: 10px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 160px); }
             h1 { font-size: 20px; }
-            .stat { font-size: 14px; }
+            .stat { font-size: 12px; }
+            .stats-grid { gap: 6px !important; }
             #ui { width: 100%; }
             #leaderboard { width: 100%; min-width: 0; }
             #mobileControls { display: block; }
@@ -403,9 +417,16 @@
                 font-size: 18px;
                 border-radius: 10px;
             }
+            .mobile-actions {
+                grid-template-columns: repeat(2, 40px);
+                grid-auto-rows: 40px;
+                gap: 8px 10px;
+            }
             .btn-grid {
                 grid-template-columns: 1fr !important;
             }
+            .stat { font-size: 11px; }
+            .stats-grid { gap: 4px !important; }
             #gameContainer { gap: 12px; }
             #ui { padding: 12px; }
             h1 { font-size: 18px; }
@@ -417,6 +438,15 @@
             -webkit-touch-callout: default;
             touch-action: manipulation;
         }
+        /* Ensure effects panel doesn't break layout with many badges */
+        #effectsPanel {
+            overflow: auto !important;
+            max-height: 72px !important;
+            min-height: 48px;
+            padding-right: 4px;
+        }
+        /* Put some space before the legend section */
+        .controls-section { margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -426,7 +456,7 @@
         <canvas id="gameCanvas" width="896" height="896"></canvas>
 
         <div id="ui">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div class="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div class="stat">Patro: <span id="level">1</span></div>
                 <div class="stat">Čas: <span id="timer">0</span>s</div>
                 <div class="stat">Skóre: <span id="score">0</span></div>
@@ -505,9 +535,6 @@
                 </button>
                 <button class="action-btn" id="mRegenBtn" aria-label="Nové patro" title="Nové patro" onclick="document.getElementById('regenerateBtn').click();">
                     <img src="icons/regenerate.svg"  alt="Nové patro" aria-hidden="true" />
-                </button>
-                <button class="action-btn" id="mEditorBtn" aria-label="Editor" title="Editor" onclick="document.getElementById('editorBtn').click();">
-                    <img src="icons/editor.svg"  alt="Editor" aria-hidden="true" />
                 </button>
                 <button class="action-btn" id="mSoundBtn" aria-label="Zvuk" title="Přepnout zvuk" onclick="document.getElementById('soundToggleBtn').click();">
                     <img src="icons/sound-on.svg"  alt="Zvuk" aria-hidden="true" />
