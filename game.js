@@ -487,7 +487,7 @@ class MazeGame {
             effectiveDelay = Math.max(this.player.moveDelay * 0.3, 50);
         }
 
-        if (now - this.player.lastMoveTime < effectiveDelay) return;
+        if (!directionChanged && now - this.player.lastMoveTime < effectiveDelay) return;
 
         if (this.isValidMove(newX, newY)) {
             // Add current position to trail before moving
@@ -1336,7 +1336,7 @@ class MazeGame {
 
             // Check if player is invisible (but keep them visible enough to see)
             if (this.player.invisibility > 0 && now < this.player.invisibility) {
-                playerOpacity = 0.95;
+                playerOpacity = 0.05;
             }
 
             this.ctx.save();
