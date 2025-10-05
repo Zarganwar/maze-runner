@@ -14,12 +14,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
 
         #gameContainer {
             display: flex;
             gap: 20px;
             align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         #gameCanvas {
@@ -127,45 +131,99 @@
         .tile-btn.selected {
             border-color: #e74c3c;
         }
+
+        .controls-section {
+            margin-top: 20px;
+        }
+
+        .controls-header {
+            background-color: #2c3e50;
+            padding: 10px;
+            margin: 0;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls-header:hover {
+            background-color: #34495e;
+        }
+
+        .controls-content {
+            padding: 15px;
+            background-color: #2c3e50;
+            border-radius: 0 0 5px 5px;
+            margin-top: 2px;
+        }
+
+        .controls-content.collapsed {
+            display: none;
+        }
+
+        .toggle-icon {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        @media (max-width: 1200px) {
+            #gameContainer {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #ui {
+                max-width: 896px;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>Maze Runner</h1>
 
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="640" height="640"></canvas>
+        <canvas id="gameCanvas" width="896" height="896"></canvas>
 
         <div id="ui">
-            <div class="stat">Patro: <span id="level">1</span></div>
-            <div class="stat">Čas: <span id="timer">0</span>s</div>
-            <div class="stat">Skóre: <span id="score">0</span></div>
-            <div class="stat">Klíče: <span id="keys">0</span>/1</div>
-            <div class="stat">Rychlost: <span id="playerSpeed">200</span>ms</div>
-            <div class="stat">Magický efekt: <span id="magicEffect">Žádný</span></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div class="stat">Patro: <span id="level">1</span></div>
+                <div class="stat">Čas: <span id="timer">0</span>s</div>
+                <div class="stat">Skóre: <span id="score">0</span></div>
+                <div class="stat">Klíče: <span id="keys">0</span>/1</div>
+                <div class="stat">Rychlost: <span id="playerSpeed">200</span>ms</div>
+                <div class="stat">Efekt: <span id="magicEffect">Žádný</span></div>
+            </div>
 
-            <button id="startBtn">Start</button>
-            <button id="restartBtn">Restart</button>
-            <button id="regenerateBtn">🔄 Nové patro</button>
-            <button id="editorBtn">Editor</button>
-            <button id="soundToggleBtn">🔊 Zvuky: ZAP</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;">
+                <button id="startBtn">Start</button>
+                <button id="restartBtn">Restart</button>
+                <button id="regenerateBtn">🔄 Nové patro</button>
+                <button id="editorBtn">Editor</button>
+                <button id="soundToggleBtn" style="grid-column: 1 / -1;">🔊 Zvuky: ZAP</button>
+            </div>
 
-            <div style="margin-top: 20px;">
-                <h3>Ovládání:</h3>
-                <p>↑↓←→ - Pohyb</p>
-                <p>S - Rychlé uložení patra</p>
-                <p>🐥 Hráč</p>
-                <p>🟩 Tráva</p>
-                <p>❄️ Sníh</p>
-                <p>🗿 Kámen</p>
-                <p>🏖️ Písek</p>
-                <p>🌊 Voda</p>
-                <p>🌳 Strom</p>
-                <p>⬛ Zeď</p>
-                <p>🗝️ Klíč</p>
-                <p>🏁 Východ</p>
-                <p>🕳️ Past</p>
-                <p>🔮 Spouštěč - magický efekt</p>
-                <p>⚡ Powerup</p>
+            <div class="controls-section">
+                <h3 class="controls-header" onclick="toggleControls()">
+                    Nápověda a ovládání
+                    <span class="toggle-icon" id="controlsIcon">▼</span>
+                </h3>
+                <div class="controls-content" id="controlsContent">
+                    <p><strong>Ovládání:</strong></p>
+                    <p>↑↓←→ - Pohyb</p>
+                    <p>S - Rychlé uložení patra</p>
+                    <p><strong>Herní prvky:</strong></p>
+                    <p>🐥 Hráč | 🟩 Tráva | ❄️ Sníh | 🗿 Kámen</p>
+                    <p>🏖️ Písek | 🌊 Voda | 🌳 Strom | ⬛ Zeď</p>
+                    <p>🗝️ Klíč | 🏁 Východ | 🕳️ Past</p>
+                    <p>🔮 Spouštěč | ⚡ Powerup</p>
+                </div>
             </div>
         </div>
     </div>
@@ -206,6 +264,21 @@
         </div>
     </div>
 
+    <script>
+        function toggleControls() {
+            const content = document.getElementById('controlsContent');
+            const icon = document.getElementById('controlsIcon');
+
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+
+            if (content.classList.contains('collapsed')) {
+                icon.textContent = '▶';
+            } else {
+                icon.textContent = '▼';
+            }
+        }
+    </script>
     <script src="game.js"></script>
 </body>
 </html>

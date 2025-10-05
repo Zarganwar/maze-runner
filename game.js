@@ -3,7 +3,8 @@ class MazeGame {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.gridSize = 32;
-        this.tileSize = 20;
+        // Konfigurovatelná velikost dlaždic - upravte tuto hodnotu pro změnu velikosti
+        this.tileSize = 28;
 
         this.gameState = 'menu';
         this.currentLevel = 1;
@@ -263,6 +264,11 @@ class MazeGame {
 
     setupEventListeners() {
         document.addEventListener('keydown', (e) => {
+            // Prevent arrow keys from scrolling the page
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+
             if (this.gameState === 'playing' && !this.editorMode) {
                 // Quick save level with 'S' key
                 if (e.key === 's' || e.key === 'S') {
