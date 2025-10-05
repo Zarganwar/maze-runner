@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Green background -->
+  <rect x="0" y="0" width="32" height="32" fill="#57b037"/>
+
+  <!-- Grass blades -->
+  <g fill="#4a9c2e" opacity="0.6">
+    <path d="M4 28 Q4 24 6 24 Q8 24 8 28 Z"/>
+    <path d="M10 28 Q10 22 12 22 Q14 22 14 28 Z"/>
+    <path d="M16 28 Q16 24 18 24 Q20 24 20 28 Z"/>
+    <path d="M22 28 Q22 22 24 22 Q26 22 26 28 Z"/>
+    <path d="M28 28 Q28 24 30 24 Q32 24 32 28 Z"/>
+  </g>
+
+  <!-- Additional grass variety -->
+  <g fill="#6bc047" opacity="0.4">
+    <path d="M2 28 Q2 26 3 26 Q4 26 4 28 Z"/>
+    <path d="M8 28 Q8 25 9 25 Q10 25 10 28 Z"/>
+    <path d="M15 28 Q15 26 16 26 Q17 26 17 28 Z"/>
+    <path d="M24 28 Q24 25 25 25 Q26 25 26 28 Z"/>
+    <path d="M30 28 Q30 26 31 26 Q32 26 32 28 Z"/>
+  </g>
+</svg>

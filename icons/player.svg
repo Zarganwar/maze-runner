@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Chick body -->
+  <circle cx="16" cy="18" r="8" fill="#ffd700"/>
+  <circle cx="16" cy="12" r="6" fill="#ffd700"/>
+
+  <!-- Eyes -->
+  <circle cx="13" cy="10" r="1.2" fill="#000"/>
+  <circle cx="19" cy="10" r="1.2" fill="#000"/>
+
+  <!-- Small white highlights in eyes -->
+  <circle cx="13.3" cy="9.7" r="0.4" fill="#fff"/>
+  <circle cx="19.3" cy="9.7" r="0.4" fill="#fff"/>
+
+  <!-- Beak -->
+  <polygon points="16,13 14,15 18,15" fill="#ff8c00"/>
+
+  <!-- Small crest on top -->
+  <path d="M14 6 C15 4, 17 4, 18 6" stroke="#ff8c00" stroke-width="1.5" fill="none"/>
+
+  <!-- Feet -->
+  <ellipse cx="13" cy="25" rx="2" ry="1.5" fill="#ff8c00"/>
+  <ellipse cx="19" cy="25" rx="2" ry="1.5" fill="#ff8c00"/>
+</svg>

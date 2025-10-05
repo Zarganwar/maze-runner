@@ -61,20 +61,28 @@ class MazeGame {
             [this.tiles.POWERUP]: '#ffd700'
         };
 
-        this.tileEmojis = {
-            [this.tiles.WALL]: '⬛',
-            [this.tiles.GRASS]: '',
-            [this.tiles.SNOW]: '❄️',
-            [this.tiles.WATER]: '🌊',
-            [this.tiles.STONE]: '🗿',
-            [this.tiles.SAND]: '🏖️',
-            [this.tiles.TREE]: '🌳',
-            [this.tiles.KEY]: '🗝️',
-            [this.tiles.EXIT]: '🏁',
-            [this.tiles.TRAP]: '🕳️',
-            [this.tiles.TRIGGER]: '🔮',
-            [this.tiles.POWERUP]: '⚡'
+        this.tileIcons = {
+            [this.tiles.WALL]: 'icons/wall.svg',
+            [this.tiles.GRASS]: 'icons/grass.svg',
+            [this.tiles.SNOW]: 'icons/snow.svg',
+            [this.tiles.WATER]: 'icons/water.svg',
+            [this.tiles.STONE]: 'icons/stone.svg',
+            [this.tiles.SAND]: 'icons/sand.svg',
+            [this.tiles.TREE]: 'icons/tree.svg',
+            [this.tiles.KEY]: 'icons/key.svg',
+            [this.tiles.EXIT]: 'icons/exit.svg',
+            [this.tiles.TRAP]: 'icons/trap.svg',
+            [this.tiles.TRIGGER]: 'icons/trigger.svg',
+            [this.tiles.POWERUP]: 'icons/powerup.svg'
         };
+
+        this.loadedImages = {};
+        this.playerIcon = 'icons/player.svg';
+        this.playerImage = null;
+
+        // Cached canvases for better performance
+        this.tileCanvases = {};
+        this.tilesLoaded = false;
 
         this.tileSpeeds = {
             [this.tiles.GRASS]: 25,
@@ -101,6 +109,7 @@ class MazeGame {
 
         this.setupEventListeners();
         this.setupUI();
+        this.loadImages();
         this.gameLoop();
     }
 
@@ -115,6 +124,80 @@ class MazeGame {
         }
 
         this.updateSoundToggleButton();
+    }
+
+    loadImages() {
+        // Load player icon
+        this.playerImage = new Image();
+        this.playerImage.src = this.playerIcon;
+
+        // Load all tile icons and create cached canvases
+        let loadedCount = 0;
+        const totalImages = Object.keys(this.tileIcons).length;
+
+        Object.entries(this.tileIcons).forEach(([tileType, iconPath]) => {
+            const img = new Image();
+            img.onload = () => {
+                this.loadedImages[tileType] = img;
+                this.createTileCanvas(parseInt(tileType), img);
+                loadedCount++;
+
+                if (loadedCount === totalImages) {
+                    this.tilesLoaded = true;
+                }
+            };
+            img.onerror = () => {
+                // Create fallback canvas if image fails to load
+                this.createFallbackTileCanvas(parseInt(tileType));
+                loadedCount++;
+
+                if (loadedCount === totalImages) {
+                    this.tilesLoaded = true;
+                }
+            };
+            img.src = iconPath;
+        });
+    }
+
+    createTileCanvas(tileType, img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = this.tileSize;
+        canvas.height = this.tileSize;
+        const ctx = canvas.getContext('2d');
+
+        // Draw background color
+        ctx.fillStyle = this.tileColors[tileType];
+        ctx.fillRect(0, 0, this.tileSize, this.tileSize);
+
+        // Draw border
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
+
+        // Draw icon if available
+        if (img && img.complete) {
+            ctx.drawImage(img, 0, 0, this.tileSize, this.tileSize);
+        }
+
+        this.tileCanvases[tileType] = canvas;
+    }
+
+    createFallbackTileCanvas(tileType) {
+        const canvas = document.createElement('canvas');
+        canvas.width = this.tileSize;
+        canvas.height = this.tileSize;
+        const ctx = canvas.getContext('2d');
+
+        // Draw background color
+        ctx.fillStyle = this.tileColors[tileType];
+        ctx.fillRect(0, 0, this.tileSize, this.tileSize);
+
+        // Draw border
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, this.tileSize, this.tileSize);
+
+        this.tileCanvases[tileType] = canvas;
     }
 
     playSound(frequency, duration = 200, type = 'sine') {
@@ -335,12 +418,19 @@ class MazeGame {
             const btn = document.createElement('div');
             btn.className = 'tile-btn';
             btn.style.backgroundColor = this.tileColors[tile.type];
-            btn.style.fontSize = '20px';
             btn.style.display = 'flex';
             btn.style.alignItems = 'center';
             btn.style.justifyContent = 'center';
-            btn.textContent = this.tileEmojis[tile.type] || '';
             btn.title = tile.name;
+
+            // Create image element for SVG icon
+            const img = document.createElement('img');
+            img.src = this.tileIcons[tile.type];
+            img.style.width = '30px';
+            img.style.height = '30px';
+            img.style.objectFit = 'contain';
+            btn.appendChild(img);
+
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -1148,26 +1238,27 @@ class MazeGame {
         this.ctx.fillStyle = '#2c3e50';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Draw each tile using cached canvases for better performance
         for (let y = 0; y < this.gridSize; y++) {
             for (let x = 0; x < this.gridSize; x++) {
                 const tile = this.currentMap[y][x];
-                this.ctx.fillStyle = this.tileColors[tile];
-                this.ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
 
-                this.ctx.strokeStyle = '#2c3e50';
-                this.ctx.lineWidth = 1;
-                this.ctx.strokeRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
-
-                const emoji = this.tileEmojis[tile];
-                if (emoji) {
-                    this.ctx.font = `${this.tileSize * 0.7}px serif`;
-                    this.ctx.textAlign = 'center';
-                    this.ctx.textBaseline = 'middle';
-                    this.ctx.fillText(
-                        emoji,
-                        x * this.tileSize + this.tileSize / 2,
-                        y * this.tileSize + this.tileSize / 2
+                // Use cached canvas if available, otherwise fall back to basic rendering
+                const cachedCanvas = this.tileCanvases[tile];
+                if (cachedCanvas) {
+                    this.ctx.drawImage(
+                        cachedCanvas,
+                        x * this.tileSize,
+                        y * this.tileSize
                     );
+                } else {
+                    // Fallback rendering if cache not ready
+                    this.ctx.fillStyle = this.tileColors[tile];
+                    this.ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+
+                    this.ctx.strokeStyle = '#2c3e50';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
                 }
             }
         }
@@ -1219,33 +1310,44 @@ class MazeGame {
             this.ctx.save();
             this.ctx.globalAlpha = playerOpacity;
 
-            // Draw player as a simple circle with eyes (chick-like)
-            const centerX = this.player.x * this.tileSize + this.tileSize / 2;
-            const centerY = this.player.y * this.tileSize + this.tileSize / 2;
-            const radius = this.tileSize * 0.3;
+            // Draw player SVG icon if loaded
+            if (this.playerImage && this.playerImage.complete) {
+                this.ctx.drawImage(
+                    this.playerImage,
+                    this.player.x * this.tileSize,
+                    this.player.y * this.tileSize,
+                    this.tileSize,
+                    this.tileSize
+                );
+            } else {
+                // Fallback: Draw player as a simple circle with eyes (chick-like)
+                const centerX = this.player.x * this.tileSize + this.tileSize / 2;
+                const centerY = this.player.y * this.tileSize + this.tileSize / 2;
+                const radius = this.tileSize * 0.3;
 
-            // Body
-            this.ctx.fillStyle = '#ffd700'; // Gold color
-            this.ctx.beginPath();
-            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            this.ctx.fill();
+                // Body
+                this.ctx.fillStyle = '#ffd700'; // Gold color
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                this.ctx.fill();
 
-            // Eyes
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.arc(centerX - radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.beginPath();
-            this.ctx.arc(centerX + radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
-            this.ctx.fill();
+                // Eyes
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(centerX - radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.arc(centerX + radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+                this.ctx.fill();
 
-            // Beak
-            this.ctx.fillStyle = '#ff8c00';
-            this.ctx.beginPath();
-            this.ctx.moveTo(centerX, centerY);
-            this.ctx.lineTo(centerX - radius * 0.2, centerY + radius * 0.3);
-            this.ctx.lineTo(centerX + radius * 0.2, centerY + radius * 0.3);
-            this.ctx.fill();
+                // Beak
+                this.ctx.fillStyle = '#ff8c00';
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX, centerY);
+                this.ctx.lineTo(centerX - radius * 0.2, centerY + radius * 0.3);
+                this.ctx.lineTo(centerX + radius * 0.2, centerY + radius * 0.3);
+                this.ctx.fill();
+            }
 
             this.ctx.restore();
         }

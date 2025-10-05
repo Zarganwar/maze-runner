@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Key shaft -->
+  <rect x="4" y="14" width="16" height="4" fill="#f1c40f" rx="2"/>
+
+  <!-- Key head (circular part) -->
+  <circle cx="24" cy="16" r="6" fill="#f39c12" stroke="#e67e22" stroke-width="1"/>
+
+  <!-- Key hole in head -->
+  <circle cx="24" cy="16" r="2.5" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+
+  <!-- Key teeth -->
+  <g fill="#f1c40f">
+    <rect x="4" y="14" width="2" height="2"/>
+    <rect x="8" y="14" width="2" height="3"/>
+    <rect x="12" y="14" width="2" height="2"/>
+  </g>
+
+  <!-- Key highlights -->
+  <g fill="#fff" opacity="0.3">
+    <ellipse cx="22" cy="13" rx="2" ry="1"/>
+    <rect x="6" y="15" width="12" height="1"/>
+  </g>
+
+  <!-- Key shadow/depth -->
+  <g fill="#d68910" opacity="0.5">
+    <rect x="4" y="17" width="16" height="1"/>
+    <path d="M18 16 A6 6 0 0 1 24 22 A6 6 0 0 0 24 10 A6 6 0 0 1 18 16"/>
+  </g>
+</svg>
