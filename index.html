@@ -252,29 +252,41 @@
         #mobileControls .controls-inner {
             max-width: 920px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            display: flex;
+            justify-content: space-between;
             gap: 12px;
-            align-items: end;
+            align-items: flex-end;
             padding: 0 16px;
         }
-        .dpad {
-            display: grid;
-            grid-template-columns: 64px 64px 64px;
-            grid-template-rows: 64px 64px 64px;
+        .dpad-left, .dpad-right {
+            display: flex;
             gap: 8px;
-            justify-content: center;
+            pointer-events: auto;
+        }
+        .dpad-left {
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            padding-bottom: 6px;
+        }
+        .dpad-right {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 6px;
         }
         .ctrl-btn {
-            width: 64px;
-            height: 64px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             border: 2px solid #1f2d3a;
-            background: rgba(52, 152, 219, 0.9);
-            color: #fff;
+            background: rgba(52, 73, 94, 0.9);
+            color: #ecf0f1;
             font-size: 22px;
             font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
             pointer-events: auto;
             touch-action: none;
@@ -285,6 +297,56 @@
         }
         .ctrl-btn:focus { outline: none; }
         .ctrl-btn:active { filter: brightness(0.9); }
+        .ctrl-btn img {
+            width: 26px;
+            height: 26px;
+            display: block;
+            pointer-events: none;
+        }
+
+        /* Mobile action buttons (right side) */
+        .mobile-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            pointer-events: auto;
+            padding-bottom: 6px;
+        }
+        .action-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid #1f2d3a;
+            background: rgba(52, 73, 94, 0.9);
+            color: #ecf0f1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        .action-btn:active { filter: brightness(0.9); }
+        /* Ensure SVG icons are visible and not just dots */
+        .action-btn svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+        .action-btn img {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+        .action-btn svg *, .action-btn svg path {
+            fill: #ecf0f1 !important;
+            stroke: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .action-btn { width: 40px; height: 40px; border-radius: 10px; }
+        }
 
         /* Responsive canvas */
         @media (max-width: 1000px) {
@@ -304,6 +366,8 @@
             #ui { width: 100%; }
             #leaderboard { width: 100%; min-width: 0; }
             #mobileControls { display: block; }
+            /* Hide large text buttons on mobile to avoid overlap */
+            .btn-grid { display: none !important; }
         }
 
         @media (max-width: 1000px) {
@@ -319,11 +383,7 @@
         }
         /* Additional mobile tweaks */
         @media (max-width: 900px) {
-            .dpad {
-                grid-template-columns: 56px 56px 56px;
-                grid-template-rows: 56px 56px 56px;
-                gap: 8px;
-            }
+            .dpad-left, .dpad-right { gap: 8px; }
             .ctrl-btn {
                 width: 56px;
                 height: 56px;
@@ -336,11 +396,7 @@
             .btn-grid { gap: 8px; }
         }
         @media (max-width: 600px) {
-            .dpad {
-                grid-template-columns: 48px 48px 48px;
-                grid-template-rows: 48px 48px 48px;
-                gap: 6px;
-            }
+            .dpad-left, .dpad-right { gap: 6px; }
             .ctrl-btn {
                 width: 48px;
                 height: 48px;
@@ -364,7 +420,7 @@
     </style>
 </head>
 <body>
-    <h1>Maze Runner</h1>
+    <h1>Rychlokrok, skok a skok <img src="/icons/player.svg" width="16" height="16"/></h1>
 
     <div id="gameContainer">
         <canvas id="gameCanvas" width="896" height="896"></canvas>
@@ -436,20 +492,30 @@
 
     <div id="mobileControls" aria-label="Mobilní ovládání">
         <div class="controls-inner">
-            <div class="dpad" aria-label="Směrové ovládání">
-                <div></div>
-                <button class="ctrl-btn" id="btnUp" aria-label="Nahoru">▲</button>
-                <div></div>
-                <button class="ctrl-btn" id="btnLeft" aria-label="Vlevo">◀</button>
-                <div></div>
-                <button class="ctrl-btn" id="btnRight" aria-label="Vpravo">▶</button>
-                <div></div>
-                <button class="ctrl-btn" id="btnDown" aria-label="Dolů">▼</button>
-                <div></div>
+            <div class="dpad-left" aria-label="Směrové ovládání (Nahoru/Dolů)">
+                <button class="ctrl-btn" id="btnUp" aria-label="Nahoru"><img src="icons/arrow-up.svg" alt="Nahoru" aria-hidden="true" /></button>
+                <button class="ctrl-btn" id="btnDown" aria-label="Dolů"><img src="icons/arrow-down.svg" alt="Dolů" aria-hidden="true" /></button>
             </div>
-            <div></div>
-            <div style="opacity: 0.7; color: #bdc3c7; pointer-events: none; text-align: right; padding-bottom: 10px;">
-                Potáhněte po herním poli nebo použijte šipky
+            <div class="mobile-actions" aria-label="Hlavní akce (mobil)">
+                <button class="action-btn" id="mStartBtn" aria-label="Start" title="Start" onclick="document.getElementById('startBtn').click();">
+                    <img src="icons/start.svg"  alt="Start" aria-hidden="true" />
+                </button>
+                <button class="action-btn" id="mRestartBtn" aria-label="Restart" title="Restart" onclick="document.getElementById('restartBtn').click();">
+                    <img src="icons/restart.svg"  alt="Restart" aria-hidden="true" />
+                </button>
+                <button class="action-btn" id="mRegenBtn" aria-label="Nové patro" title="Nové patro" onclick="document.getElementById('regenerateBtn').click();">
+                    <img src="icons/regenerate.svg"  alt="Nové patro" aria-hidden="true" />
+                </button>
+                <button class="action-btn" id="mEditorBtn" aria-label="Editor" title="Editor" onclick="document.getElementById('editorBtn').click();">
+                    <img src="icons/editor.svg"  alt="Editor" aria-hidden="true" />
+                </button>
+                <button class="action-btn" id="mSoundBtn" aria-label="Zvuk" title="Přepnout zvuk" onclick="document.getElementById('soundToggleBtn').click();">
+                    <img src="icons/sound-on.svg"  alt="Zvuk" aria-hidden="true" />
+                </button>
+            </div>
+            <div class="dpad-right" aria-label="Směrové ovládání (Vlevo/Vpravo)">
+                <button class="ctrl-btn" id="btnLeft" aria-label="Vlevo"><img src="icons/arrow-left.svg" alt="Vlevo" aria-hidden="true" /></button>
+                <button class="ctrl-btn" id="btnRight" aria-label="Vpravo"><img src="icons/arrow-right.svg" alt="Vpravo" aria-hidden="true" /></button>
             </div>
         </div>
     </div>

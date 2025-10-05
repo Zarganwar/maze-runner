@@ -101,6 +101,14 @@ class MazeGame {
             [this.tiles.POWERUP]: 25
         };
 
+        // On mobile, slow down movement to better match PC arrow key repeat speed
+        if (this.isMobile) {
+            const factor = 2.75; // empirically chosen to approximate desktop feel
+            Object.keys(this.tileSpeeds).forEach(k => {
+                this.tileSpeeds[k] = Math.round(this.tileSpeeds[k] * factor);
+            });
+        }
+
         this.impassableTiles = [this.tiles.WALL, this.tiles.WATER, this.tiles.TREE];
 
         this.currentMap = this.generateEmptyMap();
@@ -613,9 +621,11 @@ class MazeGame {
         const directionChanged = this.player.lastDirection !== direction;
         let effectiveDelay = this.player.moveDelay;
 
+        const minStep = this.isMobile ? 90 : 25;
+        const minTurnStep = this.isMobile ? 110 : 50;
         if (directionChanged) {
             // Reduce delay when changing direction for more responsive feel
-            effectiveDelay = Math.max(this.player.moveDelay * 0.3, 50);
+            effectiveDelay = Math.max(this.player.moveDelay * 0.3, minTurnStep);
         }
 
         if (!directionChanged && now - this.player.lastMoveTime < effectiveDelay) return;
@@ -630,11 +640,11 @@ class MazeGame {
             this.player.lastDirection = direction;
 
             const currentTile = this.currentMap[newY][newX];
-            let baseMoveDelay = this.tileSpeeds[currentTile] || 25;
+            let baseMoveDelay = this.tileSpeeds[currentTile] || minStep;
 
             // Apply powerup speedup if active
             if (now < this.player.powerupSlowdownEnd) {
-                baseMoveDelay = Math.max(baseMoveDelay / 2, 25); // Half delay but cap minimum
+                baseMoveDelay = Math.max(baseMoveDelay / 2, minStep); // Half delay but cap minimum
             }
 
             // Apply trap slowdown if active
@@ -1152,6 +1162,10 @@ class MazeGame {
         const button = document.getElementById('soundToggleBtn');
         if (button) {
             button.textContent = this.soundEnabled ? '🔊 Zvuky: ZAP' : '🔇 Zvuky: VYP';
+        }
+        const mSoundImg = document.querySelector('#mSoundBtn img');
+        if (mSoundImg) {
+            mSoundImg.src = this.soundEnabled ? 'icons/sound-on.svg' : 'icons/sound-off.svg';
         }
     }
 
