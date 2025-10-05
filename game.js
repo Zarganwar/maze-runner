@@ -20,10 +20,11 @@ class MazeGame {
             y: 1,
             moveSpeed: 1,
             lastMoveTime: 0,
-            moveDelay: 50,
+            moveDelay: 1,
             powerupSlowdownEnd: 0,
             trapSlowdownEnd: 0,
-            trapImmunity: 0
+            trapImmunity: 0,
+            invisibility: 0
         };
 
         this.playerTrail = [];
@@ -83,8 +84,8 @@ class MazeGame {
             [this.tiles.KEY]: 200,
             [this.tiles.EXIT]: 500,
             [this.tiles.TRAP]: 1000,
-            [this.tiles.TRIGGER]: 200,
-            [this.tiles.POWERUP]: 150
+            [this.tiles.TRIGGER]: 25,
+            [this.tiles.POWERUP]: 25
         };
 
         this.impassableTiles = [this.tiles.WALL, this.tiles.WATER, this.tiles.TREE];
@@ -384,7 +385,7 @@ class MazeGame {
             this.player.lastMoveTime = now;
 
             const currentTile = this.currentMap[newY][newX];
-            let baseMoveDelay = this.tileSpeeds[currentTile] || 200;
+            let baseMoveDelay = this.tileSpeeds[currentTile] || 25;
 
             // Apply powerup speedup if active
             if (now < this.player.powerupSlowdownEnd) {
@@ -437,7 +438,7 @@ class MazeGame {
                 break;
             case this.tiles.TRAP:
                 const now = Date.now();
-                if (this.player.trapImmunity && now < this.player.trapImmunity) {
+                if (this.player.trapImmunity > 0 && now < this.player.trapImmunity) {
                     // Hráč má imunitu - past neúčinkuje
                     this.showMagicMessage("🛡️ Imunita!", "#27ae60");
                     this.playSound(800, 200, 'triangle');
@@ -549,6 +550,12 @@ class MazeGame {
                 this.score += bonusPoints;
                 this.showMagicMessage(`🗝️ Bonus za klíče: +${bonusPoints}!`, "#f39c12");
                 this.addMagicEffect("Bonus klíče", 0);
+            },
+            // Dočasná neviditelnost
+            () => {
+                this.player.invisibility = Date.now() + 8000; // 8 sekund neviditelnosti
+                this.showMagicMessage("👻 Neviditelnost aktivní!", "#9b59b6");
+                this.addMagicEffect("👻 Neviditelnost", 8000);
             }
         ];
 
@@ -626,6 +633,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.player.invisibility = 0;
         this.activeEffects = [];
         this.playerTrail = [];
 
@@ -646,6 +654,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.player.invisibility = 0;
         this.activeEffects = [];
         this.playerTrail = [];
         this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[0]));
@@ -673,6 +682,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.player.invisibility = 0;
         this.activeEffects = [];
         this.playerTrail = [];
         this.playSound(440, 100);
@@ -845,6 +855,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
+        this.player.invisibility = 0;
         this.activeEffects = [];
         this.playerTrail = [];
         document.getElementById('gameOver').style.display = 'none';
@@ -1041,6 +1052,78 @@ class MazeGame {
             magicEffectText = effectTexts.join(", ");
         }
         document.getElementById('magicEffect').textContent = magicEffectText;
+
+        // Update visual effects panel
+        this.updateEffectsPanel();
+    }
+
+    updateEffectsPanel() {
+        const panel = document.getElementById('effectsPanel');
+        if (!panel) return;
+
+        panel.innerHTML = '';
+
+        const now = Date.now();
+
+        // Check for active player effects
+        const playerEffects = [];
+
+        // Speed effect
+        if (this.player.powerupSlowdownEnd > now) {
+            const remainingTime = Math.ceil((this.player.powerupSlowdownEnd - now) / 1000);
+            playerEffects.push({
+                name: '⚡ Rychlost',
+                time: remainingTime,
+                class: 'speed'
+            });
+        }
+
+        // Slowdown effect
+        if (this.player.trapSlowdownEnd > now) {
+            const remainingTime = Math.ceil((this.player.trapSlowdownEnd - now) / 1000);
+            playerEffects.push({
+                name: '🐌 Zpomalení',
+                time: remainingTime,
+                class: 'slowdown'
+            });
+        }
+
+        // Immunity effect
+        if (this.player.trapImmunity > now) {
+            const remainingTime = Math.ceil((this.player.trapImmunity - now) / 1000);
+            playerEffects.push({
+                name: '🛡️ Imunita',
+                time: remainingTime,
+                class: 'immunity'
+            });
+        }
+
+        // Invisibility effect
+        if (this.player.invisibility > now) {
+            const remainingTime = Math.ceil((this.player.invisibility - now) / 1000);
+            playerEffects.push({
+                name: '👻 Neviditelnost',
+                time: remainingTime,
+                class: 'invisibility'
+            });
+        }
+
+        // Create badges for each effect
+        playerEffects.forEach(effect => {
+            const badge = document.createElement('span');
+            badge.className = `effect-badge ${effect.class}`;
+            badge.textContent = `${effect.name} ${effect.time}s`;
+            panel.appendChild(badge);
+        });
+
+        // Show "Žádné efekty" if no effects are active
+        if (playerEffects.length === 0) {
+            const noBadge = document.createElement('span');
+            noBadge.style.color = '#bdc3c7';
+            noBadge.style.fontStyle = 'italic';
+            noBadge.textContent = 'Žádné aktivní efekty';
+            panel.appendChild(noBadge);
+        }
     }
 
     render() {
@@ -1105,7 +1188,18 @@ class MazeGame {
             });
         }
 
+        // Render player (always on top)
         if (this.gameState === 'playing' || this.gameState === 'editor') {
+            const now = Date.now();
+            let playerOpacity = 1;
+
+            // Check if player is invisible
+            if (this.player.invisibility > 0 && now < this.player.invisibility) {
+                playerOpacity = 0.3; // Semi-transparent when invisible
+            }
+
+            this.ctx.save();
+            this.ctx.globalAlpha = playerOpacity;
             this.ctx.font = `${this.tileSize * 0.8}px serif`;
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
@@ -1114,6 +1208,7 @@ class MazeGame {
                 this.player.x * this.tileSize + this.tileSize / 2,
                 this.player.y * this.tileSize + this.tileSize / 2
             );
+            this.ctx.restore();
         }
     }
 

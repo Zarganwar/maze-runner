@@ -173,6 +173,42 @@
             transform: rotate(-90deg);
         }
 
+        .effect-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 6px 12px;
+            margin: 2px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            animation: effectPulse 2s infinite;
+        }
+
+        .effect-badge.immunity {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .effect-badge.speed {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+        }
+
+        .effect-badge.slowdown {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        }
+
+        .effect-badge.invisibility {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            opacity: 0.8;
+        }
+
+        @keyframes effectPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
         @media (max-width: 1200px) {
             #gameContainer {
                 flex-direction: column;
@@ -200,6 +236,10 @@
                 <div class="stat">Klíče: <span id="keys">0/0</span></div>
                 <div class="stat">Rychlost: <span id="playerSpeed">200</span>ms</div>
                 <div class="stat">Efekt: <span id="magicEffect">Žádný</span></div>
+            </div>
+
+            <div id="effectsPanel" style="margin-bottom: 15px; min-height: 40px;">
+                <!-- Active effects will be displayed here as visual badges -->
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;">
