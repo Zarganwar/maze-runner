@@ -22,6 +22,7 @@ class MazeGame {
             lastMoveTime: 0,
             moveDelay: 50,
             powerupSlowdownEnd: 0,
+            trapSlowdownEnd: 0,
             trapImmunity: 0
         };
 
@@ -390,6 +391,11 @@ class MazeGame {
                 baseMoveDelay = Math.max(baseMoveDelay / 2, 25); // Half delay but cap minimum
             }
 
+            // Apply trap slowdown if active
+            if (now < this.player.trapSlowdownEnd) {
+                baseMoveDelay = baseMoveDelay * 2; // Double delay (slower movement)
+            }
+
             this.player.moveDelay = baseMoveDelay;
 
             this.handleTileInteraction(currentTile, newX, newY);
@@ -439,6 +445,9 @@ class MazeGame {
                     // Normální efekt pasti
                     this.timeRemaining -= 10;
                     this.score -= 50;
+                    this.player.trapSlowdownEnd = Date.now() + 5000; // 5 seconds slowdown
+                    this.showMagicMessage("🐌 Zpomalení aktivní!", "#e74c3c");
+                    this.addMagicEffect("🐌 Zpomalení", 5000);
                     this.playSound(200, 400, 'sawtooth');
                 }
                 this.currentMap[y][x] = this.tiles.GRASS;
@@ -461,11 +470,13 @@ class MazeGame {
 
     addTrailPoint(x, y, timestamp) {
         const isSpeedActive = timestamp < this.player.powerupSlowdownEnd;
+        const isSlowdownActive = timestamp < this.player.trapSlowdownEnd;
         this.playerTrail.push({
             x: x,
             y: y,
             timestamp: timestamp,
-            isSpeedActive: isSpeedActive
+            isSpeedActive: isSpeedActive,
+            isSlowdownActive: isSlowdownActive
         });
 
         // Keep only last 15 trail points for performance
@@ -613,6 +624,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
         this.playerTrail = [];
@@ -632,6 +644,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
         this.playerTrail = [];
@@ -658,6 +671,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
         this.playerTrail = [];
@@ -829,6 +843,7 @@ class MazeGame {
         this.player.y = 1;
         this.player.moveDelay = 200;
         this.player.powerupSlowdownEnd = 0;
+        this.player.trapSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
         this.playerTrail = [];
@@ -1004,12 +1019,12 @@ class MazeGame {
                 }
             }
         }
-        const totalKeys = this.keys + totalKeysOnMap;
+        const totalKeysForLevel = this.keys + totalKeysOnMap;
 
         document.getElementById('level').textContent = this.currentLevel;
         document.getElementById('timer').textContent = this.timeRemaining;
         document.getElementById('score').textContent = this.score;
-        document.getElementById('keys').textContent = `${this.keys}/${totalKeys}`;
+        document.getElementById('keys').textContent = `${this.keys}/${totalKeysForLevel}`;
         document.getElementById('playerSpeed').textContent = this.player.moveDelay;
 
         // Update magic effect display
@@ -1070,11 +1085,14 @@ class MazeGame {
                     const x = point.x * this.tileSize + this.tileSize / 2;
                     const y = point.y * this.tileSize + this.tileSize / 2;
 
-                    // Different colors for speed powerup
+                    // Different colors for effects
                     if (point.isSpeedActive) {
                         // Colorful gradient for speed trail
                         const hue = (age / 50) % 360; // Cycling rainbow
                         this.ctx.fillStyle = `hsla(${hue}, 70%, 60%, ${opacity * 0.8})`;
+                    } else if (point.isSlowdownActive) {
+                        // Red trail for slowdown
+                        this.ctx.fillStyle = `rgba(231, 76, 60, ${opacity * 0.7})`;
                     } else {
                         // Normal trail - soft blue
                         this.ctx.fillStyle = `rgba(52, 152, 219, ${opacity * 0.6})`;
