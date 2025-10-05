@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Runner - Hra s bludiště</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameContainer {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        #gameCanvas {
+            border: 2px solid #34495e;
+            background-color: #ecf0f1;
+        }
+
+        #ui {
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 200px;
+        }
+
+        .stat {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        #leaderboard {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            min-width: 300px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #2c3e50;
+            border-radius: 3px;
+        }
+
+        #gameOver {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2c3e50;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #34495e;
+            text-align: center;
+        }
+
+        #playerNameInput {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #levelEditor {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .tile-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 40px);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .tile-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #2c3e50;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .tile-btn.selected {
+            border-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Maze Runner</h1>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="640" height="640"></canvas>
+
+        <div id="ui">
+            <div class="stat">Patro: <span id="level">1</span></div>
+            <div class="stat">Čas: <span id="timer">0</span>s</div>
+            <div class="stat">Skóre: <span id="score">0</span></div>
+            <div class="stat">Klíče: <span id="keys">0</span>/1</div>
+
+            <button id="startBtn">Start</button>
+            <button id="restartBtn">Restart</button>
+            <button id="editorBtn">Editor</button>
+
+            <div style="margin-top: 20px;">
+                <h3>Ovládání:</h3>
+                <p>↑↓←→ - Pohyb</p>
+                <p>🟩 Tráva - normální rychlost</p>
+                <p>❄️ Sníh - pomalý</p>
+                <p>🗿 Kámen - pomalý</p>
+                <p>🏖️ Písek - normální</p>
+                <p>🌊 Voda - neprůchozí</p>
+                <p>🌳 Strom - neprůchozí</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="leaderboard">
+        <h3>Žebříček</h3>
+        <div id="leaderboardList"></div>
+    </div>
+
+    <div id="gameOver">
+        <h2 id="gameOverTitle">Konec hry!</h2>
+        <p id="gameOverMessage"></p>
+        <p>Vaše skóre: <span id="finalScore">0</span></p>
+        <input type="text" id="playerNameInput" placeholder="Zadejte jméno" maxlength="20">
+        <br>
+        <button id="saveScoreBtn">Uložit skóre</button>
+        <button id="playAgainBtn">Hrát znovu</button>
+    </div>
+
+    <div id="levelEditor">
+        <h3>Editor pater</h3>
+        <div class="tile-selector" id="tileSelector"></div>
+        <button id="clearLevelBtn">Vymazat</button>
+        <button id="saveLevelBtn">Uložit patro</button>
+        <button id="loadLevelBtn">Načíst patro</button>
+        <button id="closeEditorBtn">Zavřít</button>
+        <input type="file" id="levelFileInput" accept=".json" style="display: none;">
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
