@@ -19,7 +19,7 @@ class MazeGame {
             y: 1,
             moveSpeed: 1,
             lastMoveTime: 0,
-            moveDelay: 10,
+            moveDelay: 50,
             powerupSlowdownEnd: 0,
             trapImmunity: 0
         };
@@ -50,7 +50,7 @@ class MazeGame {
             [this.tiles.SAND]: '#f39c12',
             [this.tiles.TREE]: '#228b22',
             [this.tiles.KEY]: '#f1c40f',
-            [this.tiles.EXIT]: '#F4C8C5FF',
+            [this.tiles.EXIT]: '#5a3105',
             [this.tiles.TRAP]: '#8e44ad',
             [this.tiles.TRIGGER]: '#e67e22',
             [this.tiles.POWERUP]: '#ffd700'
@@ -317,6 +317,7 @@ class MazeGame {
             { type: this.tiles.KEY, name: 'Klíč' },
             { type: this.tiles.EXIT, name: 'Východ' },
             { type: this.tiles.TRAP, name: 'Past' },
+            { type: this.tiles.TRIGGER, name: 'Spouštěč' },
             { type: this.tiles.POWERUP, name: 'Powerup' }
         ];
 
@@ -439,7 +440,9 @@ class MazeGame {
             case this.tiles.POWERUP:
                 this.score += 150;
                 this.currentMap[y][x] = this.tiles.GRASS;
-                this.player.powerupSlowdownEnd = Date.now() + 8000; // 8 seconds speedup
+                this.player.powerupSlowdownEnd = Date.now() + 10000; // 10 seconds speedup
+                this.showMagicMessage("⚡ Rychlost zvýšena!", "#f1c40f");
+                this.addMagicEffect("⚡ Rychlost", 5000);
                 this.playSound(1000, 400, 'triangle');
                 break;
         }
@@ -449,19 +452,19 @@ class MazeGame {
         const effects = [
             // Časové efekty
             () => {
-                this.timeRemaining += 20;
-                this.showMagicMessage("🕐 +20 sekund!", "#3498db");
-                this.addMagicEffect("Čas +20s", 0);
+                this.timeRemaining += 10;
+                this.showMagicMessage("🕐 +10 sekund!", "#3498db");
+                this.addMagicEffect("Čas +10s", 0);
             },
             // Skóre efekty
             () => {
-                this.score += 200;
-                this.showMagicMessage("💰 +200 bodů!", "#f1c40f");
-                this.addMagicEffect("Skóre +200", 0);
+                this.score += 700;
+                this.showMagicMessage("💰 +700 bodů!", "#f1c40f");
+                this.addMagicEffect("Skóre +700", 0);
             },
             // Rychlost efekty
             () => {
-                this.player.moveDelay = Math.max(50, this.player.moveDelay - 75);
+                this.player.moveDelay = Math.max(50, this.player.moveDelay - 15);
                 this.showMagicMessage("🏃 Rychlost zvýšena!", "#2ecc71");
                 this.addMagicEffect("Rychlost zvýšena", 0);
             },
@@ -483,8 +486,8 @@ class MazeGame {
                     this.addMagicEffect("Teleportován", 0);
                 } else {
                     this.score += 100;
-                    this.showMagicMessage("✨ Žádný klíč k teleportaci! +100 bodů", "#e67e22");
-                    this.addMagicEffect("Bonus +100", 0);
+                    this.showMagicMessage("✨ Žádný klíč k teleportaci! +200 bodů", "#e67e22");
+                    this.addMagicEffect("Bonus +200", 0);
                 }
             },
             // Dočasná imunita vůči pastím
@@ -495,7 +498,7 @@ class MazeGame {
             },
             // Bonus za všechny sebrané klíče
             () => {
-                const bonusPoints = this.keys * 150;
+                const bonusPoints = this.keys * 350;
                 this.score += bonusPoints;
                 this.showMagicMessage(`🗝️ Bonus za klíče: +${bonusPoints}!`, "#f39c12");
                 this.addMagicEffect("Bonus klíče", 0);
