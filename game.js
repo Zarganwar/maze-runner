@@ -2,8 +2,13 @@ class MazeGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.gridSize = 32;
-        this.tileSize = 28;
+        // Device-aware sizing
+        this.isMobile = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth <= 900;
+        this.gridSize = this.isMobile ? 16 : 32;
+        this.tileSize = 28; // keep tile size constant; canvas size adapts by gridSize
+        // Match canvas size to grid so the map is centered and not offset
+        this.canvas.width = this.gridSize * this.tileSize;
+        this.canvas.height = this.gridSize * this.tileSize;
 
         this.gameState = 'menu';
         this.currentLevel = 1;
@@ -109,6 +114,7 @@ class MazeGame {
         this.initSounds();
         this.setupEventListeners();
         this.setupUI();
+        this.applyResponsiveUI();
         this.loadImages();
         this.gameLoop();
     }
@@ -492,6 +498,48 @@ class MazeGame {
         });
 
         tileSelector.children[0].classList.add('selected');
+    }
+
+    applyResponsiveUI() {
+        if (!this.isMobile) return;
+        // Collapse legend/controls by default on mobile
+        const controlsContent = document.getElementById('controlsContent');
+        const controlsIcon = document.getElementById('controlsIcon');
+        if (controlsContent && !controlsContent.classList.contains('collapsed')) {
+            controlsContent.classList.add('collapsed');
+        }
+        if (controlsIcon) {
+            controlsIcon.classList.add('collapsed');
+            controlsIcon.textContent = '▶';
+        }
+        // Hide editor on mobile completely
+        const editorBtn = document.getElementById('editorBtn');
+        const levelEditor = document.getElementById('levelEditor');
+        if (editorBtn) editorBtn.style.display = 'none';
+        if (levelEditor) levelEditor.style.display = 'none';
+        // Hide leaderboard by default and add a toggle button
+        const leaderboard = document.getElementById('leaderboard');
+        const ui = document.getElementById('ui');
+        if (leaderboard && ui) {
+            leaderboard.style.display = 'none';
+            let toggleBtn = document.getElementById('toggleLeaderboardBtn');
+            if (!toggleBtn) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = 'toggleLeaderboardBtn';
+                toggleBtn.textContent = '📊 Žebříček';
+                toggleBtn.style.gridColumn = '1 / -1';
+                // Insert after sound toggle
+                const btnContainer = ui.querySelector('div > #soundToggleBtn')?.parentElement || ui;
+                btnContainer.appendChild(toggleBtn);
+            }
+            const toggle = () => {
+                const isHidden = leaderboard.style.display === 'none';
+                leaderboard.style.display = isHidden ? 'block' : 'none';
+                // Optionally scroll into view when opening
+                if (isHidden) leaderboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+            toggleBtn.onclick = toggle;
+        }
     }
 
     handlePlayerMovement(key) {
@@ -902,6 +950,7 @@ class MazeGame {
             name: playerName,
             score: this.score,
             level: this.currentLevel,
+            gridSize: this.gridSize,
             date: new Date().toLocaleDateString()
         });
 
@@ -922,15 +971,21 @@ class MazeGame {
         leaderboard.forEach((entry, index) => {
             const div = document.createElement('div');
             div.className = 'leaderboard-entry';
+            const gs = entry.gridSize ? `, GS ${entry.gridSize}` : '';
             div.innerHTML = `
                 <span>${index + 1}. ${entry.name}</span>
-                <span>${entry.score} b. (Patro ${entry.level})</span>
+                <span>${entry.score} b. (Patro ${entry.level}${gs})</span>
             `;
             leaderboardList.appendChild(div);
         });
     }
 
     toggleEditor() {
+        // Disable editor on mobile devices
+        if (this.isMobile) {
+            alert('Editor není dostupný na mobilu.');
+            return;
+        }
         this.editorMode = !this.editorMode;
         document.getElementById('levelEditor').style.display = this.editorMode ? 'block' : 'none';
 
