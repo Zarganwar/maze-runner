@@ -25,6 +25,8 @@ class MazeGame {
             trapImmunity: 0
         };
 
+        this.playerTrail = [];
+
         this.activeEffects = [];
 
         this.tiles = {
@@ -373,6 +375,9 @@ class MazeGame {
         }
 
         if (this.isValidMove(newX, newY)) {
+            // Add current position to trail before moving
+            this.addTrailPoint(this.player.x, this.player.y, now);
+
             this.player.x = newX;
             this.player.y = newY;
             this.player.lastMoveTime = now;
@@ -452,6 +457,31 @@ class MazeGame {
                 this.playSound(1000, 400, 'triangle');
                 break;
         }
+    }
+
+    addTrailPoint(x, y, timestamp) {
+        const isSpeedActive = timestamp < this.player.powerupSlowdownEnd;
+        this.playerTrail.push({
+            x: x,
+            y: y,
+            timestamp: timestamp,
+            isSpeedActive: isSpeedActive
+        });
+
+        // Keep only last 15 trail points for performance
+        if (this.playerTrail.length > 15) {
+            this.playerTrail.shift();
+        }
+    }
+
+    updateTrail() {
+        const now = Date.now();
+        const maxAge = 1500; // Trail lasts 1.5 seconds
+
+        // Remove old trail points
+        this.playerTrail = this.playerTrail.filter(point =>
+            now - point.timestamp < maxAge
+        );
     }
 
     triggerEffect() {
@@ -585,6 +615,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
+        this.playerTrail = [];
 
         // Removed level 20 limit - game continues indefinitely for infinite scoring
     }
@@ -603,6 +634,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
+        this.playerTrail = [];
         this.currentMap = JSON.parse(JSON.stringify(this.predefinedLevels[0]));
         document.getElementById('gameOver').style.display = 'none';
     }
@@ -628,6 +660,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
+        this.playerTrail = [];
         this.playSound(440, 100);
     }
 
@@ -798,6 +831,7 @@ class MazeGame {
         this.player.powerupSlowdownEnd = 0;
         this.player.trapImmunity = 0;
         this.activeEffects = [];
+        this.playerTrail = [];
         document.getElementById('gameOver').style.display = 'none';
     }
 
@@ -956,6 +990,9 @@ class MazeGame {
             this.activeEffects = this.activeEffects.filter(effect =>
                 effect.expiry === 0 || now < effect.expiry
             );
+
+            // Update trail
+            this.updateTrail();
         }
 
         // Count actual keys on the map
@@ -1017,6 +1054,37 @@ class MazeGame {
                     );
                 }
             }
+        }
+
+        // Render player trail
+        if (this.gameState === 'playing' && this.playerTrail.length > 0) {
+            const now = Date.now();
+            const maxAge = 1500;
+
+            this.playerTrail.forEach(point => {
+                const age = now - point.timestamp;
+                const opacity = Math.max(0, 1 - (age / maxAge));
+
+                if (opacity > 0) {
+                    const size = this.tileSize * 0.6 * opacity;
+                    const x = point.x * this.tileSize + this.tileSize / 2;
+                    const y = point.y * this.tileSize + this.tileSize / 2;
+
+                    // Different colors for speed powerup
+                    if (point.isSpeedActive) {
+                        // Colorful gradient for speed trail
+                        const hue = (age / 50) % 360; // Cycling rainbow
+                        this.ctx.fillStyle = `hsla(${hue}, 70%, 60%, ${opacity * 0.8})`;
+                    } else {
+                        // Normal trail - soft blue
+                        this.ctx.fillStyle = `rgba(52, 152, 219, ${opacity * 0.6})`;
+                    }
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            });
         }
 
         if (this.gameState === 'playing' || this.gameState === 'editor') {
