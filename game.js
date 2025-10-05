@@ -969,6 +969,13 @@ class MazeGame {
         this.timeLimit = 120;
         this.timeRemaining = this.timeLimit;
         this.gameStartTime = Date.now();
+
+        // secret: keyportal
+        this.secretBuffer = '';
+        this.portalModeUntil = 0; // timestamp until when portal mode is active
+        this.portalUsed = false;  // can be activated only once per session
+        this.portalCycleIndex = 0;
+
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
