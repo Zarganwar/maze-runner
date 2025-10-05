@@ -19,7 +19,7 @@ class MazeGame {
             y: 1,
             moveSpeed: 1,
             lastMoveTime: 0,
-            moveDelay: 200
+            moveDelay: 25
         };
 
         this.tiles = {
@@ -51,13 +51,13 @@ class MazeGame {
         };
 
         this.tileSpeeds = {
-            [this.tiles.GRASS]: 200,
+            [this.tiles.GRASS]: 50,
             [this.tiles.SNOW]: 400,
-            [this.tiles.STONE]: 350,
-            [this.tiles.SAND]: 200,
+            [this.tiles.STONE]: 1500,
+            [this.tiles.SAND]: 400,
             [this.tiles.KEY]: 200,
             [this.tiles.EXIT]: 200,
-            [this.tiles.TRAP]: 200,
+            [this.tiles.TRAP]: 1000,
             [this.tiles.TRIGGER]: 200
         };
 
