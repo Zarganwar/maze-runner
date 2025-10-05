@@ -395,6 +395,58 @@ class MazeGame {
                 this.handleEditorClick(e);
             }
         });
+
+        // Mobile: on-screen buttons
+        const btnUp = document.getElementById('btnUp');
+        const btnDown = document.getElementById('btnDown');
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const triggerBtn = (key) => {
+            if (this.gameState === 'playing' && !this.editorMode) {
+                this.handlePlayerMovement(key);
+            }
+        };
+        const bindBtn = (el, key) => {
+            if (!el) return;
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                triggerBtn(key);
+            });
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                triggerBtn(key);
+            });
+        };
+        bindBtn(btnUp, 'ArrowUp');
+        bindBtn(btnDown, 'ArrowDown');
+        bindBtn(btnLeft, 'ArrowLeft');
+        bindBtn(btnRight, 'ArrowRight');
+
+        // Mobile: swipe on canvas for one-step movement
+        let swipeStart = null;
+        this.canvas.addEventListener('pointerdown', (e) => {
+            if (this.editorMode) return; // editor uses clicks
+            swipeStart = { x: e.clientX, y: e.clientY, t: Date.now() };
+        });
+        this.canvas.addEventListener('pointerup', (e) => {
+            if (!swipeStart) return;
+            const dx = e.clientX - swipeStart.x;
+            const dy = e.clientY - swipeStart.y;
+            const absX = Math.abs(dx);
+            const absY = Math.abs(dy);
+            const dt = Date.now() - swipeStart.t;
+            swipeStart = null;
+            // Thresholds: move if swipe > 24px and under 600ms (or any distance > 48px regardless of time)
+            const dist = Math.hypot(dx, dy);
+            if ((dist > 24 && dt < 600) || dist > 48) {
+                if (absX > absY) {
+                    triggerBtn(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+                } else {
+                    triggerBtn(dy > 0 ? 'ArrowDown' : 'ArrowUp');
+                }
+            }
+        });
+        this.canvas.addEventListener('pointercancel', () => { swipeStart = null; });
     }
 
     setupUI() {

@@ -220,6 +220,75 @@
                 width: 100%;
             }
         }
+        /* Mobile controls */
+        #mobileControls {
+            display: none;
+            position: fixed;
+            bottom: 16px;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            pointer-events: none; /* enable child buttons only */
+        }
+        #mobileControls .controls-inner {
+            max-width: 920px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
+            align-items: end;
+            padding: 0 16px;
+        }
+        .dpad {
+            display: grid;
+            grid-template-columns: 64px 64px 64px;
+            grid-template-rows: 64px 64px 64px;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        .ctrl-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            border: 2px solid #1f2d3a;
+            background: rgba(52, 152, 219, 0.9);
+            color: #fff;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+            pointer-events: auto;
+            touch-action: none;
+        }
+        .ctrl-btn:active { filter: brightness(0.9); }
+
+        /* Responsive canvas */
+        #gameCanvas {
+            max-width: 96vw;
+            height: auto;
+        }
+
+        /* Show mobile controls on small screens */
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            h1 { font-size: 20px; }
+            .stat { font-size: 14px; }
+            #ui { width: 100%; }
+            #leaderboard { width: 100%; min-width: 0; }
+            #mobileControls { display: block; }
+        }
+
+        @media (max-width: 1200px) {
+            #gameContainer {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #ui {
+                max-width: 896px;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -289,6 +358,26 @@
                         <span>Powerup (dočasné efekty)</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobileControls" aria-label="Mobilní ovládání">
+        <div class="controls-inner">
+            <div class="dpad" aria-label="Směrové ovládání">
+                <div></div>
+                <button class="ctrl-btn" id="btnUp" aria-label="Nahoru">▲</button>
+                <div></div>
+                <button class="ctrl-btn" id="btnLeft" aria-label="Vlevo">◀</button>
+                <div></div>
+                <button class="ctrl-btn" id="btnRight" aria-label="Vpravo">▶</button>
+                <div></div>
+                <button class="ctrl-btn" id="btnDown" aria-label="Dolů">▼</button>
+                <div></div>
+            </div>
+            <div></div>
+            <div style="opacity: 0.7; color: #bdc3c7; pointer-events: none; text-align: right; padding-bottom: 10px;">
+                Potáhněte po herním poli nebo použijte šipky
             </div>
         </div>
     </div>
