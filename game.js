@@ -243,7 +243,17 @@ class MazeGame {
     setupEventListeners() {
         document.addEventListener('keydown', (e) => {
             if (this.gameState === 'playing' && !this.editorMode) {
+                // Quick save level with 'S' key
+                if (e.key === 's' || e.key === 'S') {
+                    this.quickSaveCurrentLevel();
+                    return;
+                }
                 this.handlePlayerMovement(e.key);
+            }
+
+            // Prevent Enter from triggering default actions when playing
+            if (e.key === 'Enter' && this.gameState === 'playing') {
+                e.preventDefault();
             }
         });
 
@@ -362,7 +372,17 @@ class MazeGame {
                 this.playSound(880, 300, 'sine');
                 break;
             case this.tiles.EXIT:
-                if (this.keys >= this.keysRequired) {
+                // Count remaining keys on the map
+                let remainingKeys = 0;
+                for (let mapY = 0; mapY < this.gridSize; mapY++) {
+                    for (let mapX = 0; mapX < this.gridSize; mapX++) {
+                        if (this.currentMap[mapY][mapX] === this.tiles.KEY) {
+                            remainingKeys++;
+                        }
+                    }
+                }
+                // Player can proceed if they collected all keys (no keys remaining on map)
+                if (remainingKeys === 0) {
                     this.playSound(660, 500, 'triangle');
                     this.nextLevel();
                 }
@@ -404,6 +424,7 @@ class MazeGame {
 
         this.timeLimit = Math.max(45, 120 - (this.currentLevel - 1) * 8);
         this.timeRemaining = this.timeLimit;
+        this.gameStartTime = Date.now();  // Reset start time for new level
         this.player.x = 1;
         this.player.y = 1;
         this.player.moveDelay = 200;
@@ -722,6 +743,36 @@ class MazeGame {
         }
     }
 
+    quickSaveCurrentLevel() {
+        const levelName = `patro-${this.currentLevel}-${new Date().toISOString().split('T')[0]}`;
+
+        const levelData = {
+            name: levelName,
+            map: this.currentMap,
+            timeLimit: this.timeLimit,
+            level: this.currentLevel,
+            created: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(levelData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `${levelName}.json`;
+        link.click();
+
+        // Show temporary notification
+        const notification = document.createElement('div');
+        notification.textContent = `Patro "${levelName}" uloženo!`;
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 3000);
+    }
+
     update() {
         if (this.gameState === 'playing') {
             const now = Date.now();
@@ -733,10 +784,21 @@ class MazeGame {
             }
         }
 
+        // Count actual keys on the map
+        let totalKeysOnMap = 0;
+        for (let y = 0; y < this.gridSize; y++) {
+            for (let x = 0; x < this.gridSize; x++) {
+                if (this.currentMap[y][x] === this.tiles.KEY) {
+                    totalKeysOnMap++;
+                }
+            }
+        }
+        const totalKeys = this.keys + totalKeysOnMap;
+
         document.getElementById('level').textContent = this.currentLevel;
         document.getElementById('timer').textContent = this.timeRemaining;
         document.getElementById('score').textContent = this.score;
-        document.getElementById('keys').textContent = `${this.keys}/${this.keysRequired}`;
+        document.getElementById('keys').textContent = `${this.keys}/${totalKeys}`;
     }
 
     render() {
