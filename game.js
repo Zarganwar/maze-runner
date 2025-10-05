@@ -1072,9 +1072,10 @@ class MazeGame {
         if (this.player.powerupSlowdownEnd > now) {
             const remainingTime = Math.ceil((this.player.powerupSlowdownEnd - now) / 1000);
             playerEffects.push({
-                name: '⚡ Rychlost',
+                name: 'Rychlost',
                 time: remainingTime,
-                class: 'speed'
+                class: 'speed',
+                icon: 'icon-speed'
             });
         }
 
@@ -1082,9 +1083,10 @@ class MazeGame {
         if (this.player.trapSlowdownEnd > now) {
             const remainingTime = Math.ceil((this.player.trapSlowdownEnd - now) / 1000);
             playerEffects.push({
-                name: '🐌 Zpomalení',
+                name: 'Zpomalení',
                 time: remainingTime,
-                class: 'slowdown'
+                class: 'slowdown',
+                icon: 'icon-slowdown'
             });
         }
 
@@ -1092,9 +1094,10 @@ class MazeGame {
         if (this.player.trapImmunity > now) {
             const remainingTime = Math.ceil((this.player.trapImmunity - now) / 1000);
             playerEffects.push({
-                name: '🛡️ Imunita',
+                name: 'Imunita',
                 time: remainingTime,
-                class: 'immunity'
+                class: 'immunity',
+                icon: 'icon-shield'
             });
         }
 
@@ -1102,9 +1105,10 @@ class MazeGame {
         if (this.player.invisibility > now) {
             const remainingTime = Math.ceil((this.player.invisibility - now) / 1000);
             playerEffects.push({
-                name: '👻 Neviditelnost',
+                name: 'Neviditelnost',
                 time: remainingTime,
-                class: 'invisibility'
+                class: 'invisibility',
+                icon: 'icon-invisibility'
             });
         }
 
@@ -1112,7 +1116,21 @@ class MazeGame {
         playerEffects.forEach(effect => {
             const badge = document.createElement('span');
             badge.className = `effect-badge ${effect.class}`;
-            badge.textContent = `${effect.name} ${effect.time}s`;
+
+            // Create SVG icon
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '16');
+            svg.setAttribute('height', '16');
+            svg.setAttribute('viewBox', '0 0 16 16');
+            svg.style.marginRight = '4px';
+            svg.style.verticalAlign = 'middle';
+
+            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${effect.icon}`);
+            svg.appendChild(use);
+
+            badge.appendChild(svg);
+            badge.appendChild(document.createTextNode(`${effect.name} ${effect.time}s`));
             panel.appendChild(badge);
         });
 
@@ -1193,21 +1211,42 @@ class MazeGame {
             const now = Date.now();
             let playerOpacity = 1;
 
-            // Check if player is invisible
+            // Check if player is invisible (but keep them visible enough to see)
             if (this.player.invisibility > 0 && now < this.player.invisibility) {
-                playerOpacity = 0.3; // Semi-transparent when invisible
+                playerOpacity = 0.6; // More visible when invisible
             }
 
             this.ctx.save();
             this.ctx.globalAlpha = playerOpacity;
-            this.ctx.font = `${this.tileSize * 0.8}px serif`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(
-                '🐥',
-                this.player.x * this.tileSize + this.tileSize / 2,
-                this.player.y * this.tileSize + this.tileSize / 2
-            );
+
+            // Draw player as a simple circle with eyes (chick-like)
+            const centerX = this.player.x * this.tileSize + this.tileSize / 2;
+            const centerY = this.player.y * this.tileSize + this.tileSize / 2;
+            const radius = this.tileSize * 0.3;
+
+            // Body
+            this.ctx.fillStyle = '#ffd700'; // Gold color
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Eyes
+            this.ctx.fillStyle = '#000000';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Beak
+            this.ctx.fillStyle = '#ff8c00';
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.lineTo(centerX - radius * 0.2, centerY + radius * 0.3);
+            this.ctx.lineTo(centerX + radius * 0.2, centerY + radius * 0.3);
+            this.ctx.fill();
+
             this.ctx.restore();
         }
     }
