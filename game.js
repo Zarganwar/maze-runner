@@ -89,6 +89,12 @@ class MazeGame {
         this.tileCanvases = {};
         this.tilesLoaded = false;
 
+        // Secret portal easter egg state (session-scoped)
+        this.secretBuffer = '';
+        this.portalModeUntil = 0; // timestamp until when portal mode is active
+        this.portalUsed = false;  // can be activated only once per session
+        this.portalCycleIndex = 0;
+
         this.tileSpeeds = {
             [this.tiles.GRASS]: 25,
             [this.tiles.SNOW]: 700,
@@ -373,6 +379,20 @@ class MazeGame {
                 e.preventDefault();
             }
 
+            // Secret phrase detection: "keyportal"
+            const isCharKey = typeof e.key === 'string' && e.key.length === 1;
+            if (isCharKey) {
+                this.secretBuffer = (this.secretBuffer + e.key.toLowerCase()).slice(-20);
+                if (!this.portalUsed && this.secretBuffer.endsWith('keyportal')) {
+                    this.portalUsed = true;
+                    this.portalModeUntil = Date.now() + 2000; // 2s window
+                    this.portalCycleIndex = 0;
+                    this.showMagicMessage('🌀 Key Portal aktivní na 2s! Šipkami se portuj.', '#9b59b6');
+                    this.addMagicEffect('🔑 Portál', 2000);
+                    if (this.soundEnabled) this.playSound(1200, 250, 'square');
+                }
+            }
+
             if (this.gameState === 'playing' && !this.editorMode) {
                 // Quick save level with Ctrl+S
                 if ((e.key === 's' || e.key === 'S') && e.ctrlKey) {
@@ -615,6 +635,48 @@ class MazeGame {
                 break;
             default:
                 return;
+        }
+
+        // Portal mode: intercept arrow keys to teleport through keys and exit (2s window)
+        if (now < this.portalModeUntil && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) {
+            const targets = [];
+            // Collect all active keys
+            for (let ty = 0; ty < this.gridSize; ty++) {
+                for (let tx = 0; tx < this.gridSize; tx++) {
+                    if (this.currentMap[ty][tx] === this.tiles.KEY) targets.push({x: tx, y: ty});
+                }
+            }
+            // Find exit and push last
+            let exitPos = null;
+            for (let ty = 0; ty < this.gridSize; ty++) {
+                for (let tx = 0; tx < this.gridSize; tx++) {
+                    if (this.currentMap[ty][tx] === this.tiles.EXIT) { exitPos = {x: tx, y: ty}; break; }
+                }
+                if (exitPos) break;
+            }
+            if (exitPos) targets.push(exitPos);
+
+            if (targets.length > 0) {
+                const idx = this.portalCycleIndex % targets.length;
+                const dest = targets[idx];
+                this.portalCycleIndex++;
+
+                // Teleport: add trail from current position
+                this.addTrailPoint(this.player.x, this.player.y, now);
+                this.player.x = dest.x;
+                this.player.y = dest.y;
+                this.player.lastMoveTime = now;
+                this.player.lastDirection = direction;
+                const tileAtDest = this.currentMap[dest.y][dest.x];
+                // Minimal delay to allow quick chaining during portal window
+                const minStep = this.isMobile ? 90 : 25;
+                this.player.moveDelay = minStep;
+                if (this.soundEnabled) this.playSound(900, 80, 'triangle');
+                this.handleTileInteraction(tileAtDest, dest.x, dest.y);
+                return; // consume this key press
+            } else {
+                // No targets - fall through to normal movement
+            }
         }
 
         // If direction changed, reduce delay for more responsive controls
