@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Maze Runner - Hra s bludiště</title>
     <style>
         body {
@@ -16,6 +16,17 @@
             align-items: center;
             overflow-x: hidden;
             touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html {
+            overflow-x: hidden;
+            max-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            overscroll-behavior-x: none;
+            overscroll-behavior-y: contain;
         }
 
         #gameContainer {
@@ -29,6 +40,11 @@
         #gameCanvas {
             border: 2px solid #34495e;
             background-color: #ecf0f1;
+            touch-action: none;
+            -ms-touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         #ui {
@@ -53,6 +69,9 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         button:hover {
@@ -209,7 +228,7 @@
             50% { transform: scale(1.05); }
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1000px) {
             #gameContainer {
                 flex-direction: column;
                 align-items: center;
@@ -224,7 +243,7 @@
         #mobileControls {
             display: none;
             position: fixed;
-            bottom: 16px;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
             left: 0;
             right: 0;
             z-index: 1000;
@@ -259,18 +278,27 @@
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
             pointer-events: auto;
             touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
+        .ctrl-btn:focus { outline: none; }
         .ctrl-btn:active { filter: brightness(0.9); }
 
         /* Responsive canvas */
-        #gameCanvas {
-            max-width: 96vw;
-            height: auto;
+        @media (max-width: 1000px) {
+            #gameCanvas {
+                width: 100%;
+                max-width: 96vw;
+                height: auto;
+                display: block;
+            }
         }
 
         /* Show mobile controls on small screens */
         @media (max-width: 900px) {
-            body { padding: 10px; }
+            body { padding: 10px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 160px); }
             h1 { font-size: 20px; }
             .stat { font-size: 14px; }
             #ui { width: 100%; }
@@ -278,7 +306,7 @@
             #mobileControls { display: block; }
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1000px) {
             #gameContainer {
                 flex-direction: column;
                 align-items: center;
@@ -288,6 +316,50 @@
                 max-width: 896px;
                 width: 100%;
             }
+        }
+        /* Additional mobile tweaks */
+        @media (max-width: 900px) {
+            .dpad {
+                grid-template-columns: 56px 56px 56px;
+                grid-template-rows: 56px 56px 56px;
+                gap: 8px;
+            }
+            .ctrl-btn {
+                width: 56px;
+                height: 56px;
+                font-size: 20px;
+            }
+            #ui button {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+            .btn-grid { gap: 8px; }
+        }
+        @media (max-width: 600px) {
+            .dpad {
+                grid-template-columns: 48px 48px 48px;
+                grid-template-rows: 48px 48px 48px;
+                gap: 6px;
+            }
+            .ctrl-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+                border-radius: 10px;
+            }
+            .btn-grid {
+                grid-template-columns: 1fr !important;
+            }
+            #gameContainer { gap: 12px; }
+            #ui { padding: 12px; }
+            h1 { font-size: 18px; }
+        }
+        /* Allow text selection in form fields */
+        input, textarea, [contenteditable="true"] {
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: default;
+            touch-action: manipulation;
         }
     </style>
 </head>
@@ -311,7 +383,7 @@
                 <!-- Active effects will be displayed here as visual badges -->
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;">
+            <div class="btn-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;">
                 <button id="startBtn">Start</button>
                 <button id="restartBtn">Restart</button>
                 <button id="regenerateBtn">Nové patro</button>
@@ -330,7 +402,7 @@
                     <p>Ctrl+S - Rychlé uložení patra</p>
                     <p><strong>Herní prvky:</strong></p>
                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center;">
-                        <svg width="16" height="16" viewBox="0 0 16 16"><use href="#icon-player"></use></svg>
+                        <img src="/icons/player.svg" width="16" height="16"/>
                         <span>Kuřátko (hráč)</span>
                         <img src="/icons/grass.svg" width="16" height="16"/>
                         <span>Tráva (rychlý pohyb)</span>

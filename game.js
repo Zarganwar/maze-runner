@@ -109,6 +109,10 @@ class MazeGame {
         this.editorMode = false;
         this.selectedTile = this.tiles.WALL;
 
+        // Input state for continuous controls
+        this.heldKey = null; // e.g., 'ArrowUp', 'ArrowDown', etc.
+        this.dragControl = { active: false, startX: 0, startY: 0 };
+
         this.soundEnabled = localStorage.getItem('mazeGameSoundEnabled') !== 'false';
 
         this.initSounds();
@@ -402,7 +406,7 @@ class MazeGame {
             }
         });
 
-        // Mobile: on-screen buttons
+        // Mobile: on-screen buttons (hold to move)
         const btnUp = document.getElementById('btnUp');
         const btnDown = document.getElementById('btnDown');
         const btnLeft = document.getElementById('btnLeft');
@@ -412,47 +416,74 @@ class MazeGame {
                 this.handlePlayerMovement(key);
             }
         };
+        const setHeld = (key) => {
+            if (this.gameState !== 'playing' || this.editorMode) return;
+            this.heldKey = key;
+        };
+        const clearHeldIf = (key) => {
+            if (this.heldKey === key) this.heldKey = null;
+        };
         const bindBtn = (el, key) => {
             if (!el) return;
+            // Use pointer events only to avoid duplicate triggers on mobile
             el.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
-                triggerBtn(key);
+                e.stopPropagation();
+                try { el.setPointerCapture(e.pointerId); } catch {}
+                setHeld(key);
+                triggerBtn(key); // Immediate step for responsiveness
             });
-            el.addEventListener('click', (e) => {
-                e.preventDefault();
-                triggerBtn(key);
-            });
+            const end = () => clearHeldIf(key);
+            el.addEventListener('pointerup', (e) => { e.preventDefault(); end(); });
+            el.addEventListener('pointercancel', end);
+            el.addEventListener('pointerleave', end);
+            el.addEventListener('pointerout', end);
         };
         bindBtn(btnUp, 'ArrowUp');
         bindBtn(btnDown, 'ArrowDown');
         bindBtn(btnLeft, 'ArrowLeft');
         bindBtn(btnRight, 'ArrowRight');
 
-        // Mobile: swipe on canvas for one-step movement
-        let swipeStart = null;
+        // Mobile: drag on canvas for continuous movement
         this.canvas.addEventListener('pointerdown', (e) => {
             if (this.editorMode) return; // editor uses clicks
-            swipeStart = { x: e.clientX, y: e.clientY, t: Date.now() };
+            e.preventDefault();
+            try { this.canvas.setPointerCapture(e.pointerId); } catch {}
+            this.dragControl.active = true;
+            this.dragControl.startX = e.clientX;
+            this.dragControl.startY = e.clientY;
+            this.heldKey = null; // wait until movement exceeds dead zone
         });
-        this.canvas.addEventListener('pointerup', (e) => {
-            if (!swipeStart) return;
-            const dx = e.clientX - swipeStart.x;
-            const dy = e.clientY - swipeStart.y;
+        const updateDragDirection = (e) => {
+            if (!this.dragControl.active) return;
+            const dx = e.clientX - this.dragControl.startX;
+            const dy = e.clientY - this.dragControl.startY;
             const absX = Math.abs(dx);
             const absY = Math.abs(dy);
-            const dt = Date.now() - swipeStart.t;
-            swipeStart = null;
-            // Thresholds: move if swipe > 24px and under 600ms (or any distance > 48px regardless of time)
-            const dist = Math.hypot(dx, dy);
-            if ((dist > 24 && dt < 600) || dist > 48) {
-                if (absX > absY) {
-                    triggerBtn(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
-                } else {
-                    triggerBtn(dy > 0 ? 'ArrowDown' : 'ArrowUp');
-                }
+            const deadZone = 10;
+            if (absX < deadZone && absY < deadZone) {
+                this.heldKey = null;
+                return;
             }
+            if (absX > absY) {
+                this.heldKey = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
+            } else {
+                this.heldKey = dy > 0 ? 'ArrowDown' : 'ArrowUp';
+            }
+        };
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (this.editorMode) return;
+            e.preventDefault();
+            updateDragDirection(e);
         });
-        this.canvas.addEventListener('pointercancel', () => { swipeStart = null; });
+        const endDrag = () => {
+            this.dragControl.active = false;
+            this.heldKey = null;
+        };
+        this.canvas.addEventListener('pointerup', (e) => { e.preventDefault(); endDrag(); });
+        this.canvas.addEventListener('pointercancel', endDrag);
+        this.canvas.addEventListener('pointerleave', endDrag);
+        this.canvas.addEventListener('pointerout', endDrag);
     }
 
     setupUI() {
@@ -1281,6 +1312,11 @@ class MazeGame {
 
         // Update visual effects panel
         this.updateEffectsPanel();
+
+        // Continuous input handling (mobile hold/drag)
+        if (this.gameState === 'playing' && !this.editorMode && this.heldKey) {
+            this.handlePlayerMovement(this.heldKey);
+        }
     }
 
     updateEffectsPanel() {
