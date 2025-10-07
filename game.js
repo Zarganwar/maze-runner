@@ -847,10 +847,11 @@ class MazeGame {
                 }
                 if (keys.length > 0) {
                     const randomKey = keys[Math.floor(Math.random() * keys.length)];
-                    this.player.x = Math.max(0, randomKey.x - 1);
-                    this.player.y = Math.max(0, randomKey.y - 1);
+                    this.player.x = Math.max(0, randomKey.x);
+                    this.player.y = Math.max(0, randomKey.y);
                     this.showMagicMessage("🌀 Teleportace ke klíči!", "#9b59b6");
                     this.addMagicEffect("Teleportován", 0);
+                    this.handleTileInteraction(this.tiles.KEY, randomKey.x, randomKey.y);
                 } else {
                     this.score += 100;
                     this.showMagicMessage("✨ Žádný klíč k teleportaci! +200 bodů", "#e67e22");
