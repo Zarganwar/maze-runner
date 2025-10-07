@@ -267,11 +267,19 @@ class MazeGame {
     }
 
     generateProgressiveLevel(levelNumber) {
-        const complexity = Math.min(30 + levelNumber * 8, 80);
+        // Base complexity grows with level, capped at 80 for desktop-sized maps (32x32)
+        const baseComplexity = Math.min(30 + levelNumber * 8, 80);
+
+        // Scale obstacle count by map area to keep density consistent on smaller grids (e.g., mobile 16x16)
+        const referenceGrid = 32; // baseline grid used when tuning baseComplexity
+        const areaFactor = (this.gridSize * this.gridSize) / (referenceGrid * referenceGrid);
+        // Ensure at least a small number of obstacles, but reduce count significantly on smaller grids
+        const scaledComplexity = Math.max(8, Math.round(baseComplexity * areaFactor));
+
         const wallTiles = [this.tiles.WALL, this.tiles.TREE];
         const floorTile = this.tiles.GRASS;
         const wallTile = wallTiles[Math.floor(Math.random() * wallTiles.length)];
-        const map = this.generateMaze(complexity, floorTile, wallTile, levelNumber);
+        const map = this.generateMaze(scaledComplexity, floorTile, wallTile, levelNumber);
 
         return map;
     }
